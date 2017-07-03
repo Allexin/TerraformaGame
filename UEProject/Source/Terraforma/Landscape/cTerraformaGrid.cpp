@@ -54,7 +54,19 @@ bool cTerraformaGrid::loadFromFile(FString FileName) {
 	int i = 0;
 	for (int y = 0; y<m_Height; y++)
 		for (int x = 0; x < m_Width; x++) {
+			m_Map[i].x = x;
+			m_Map[i].y = y;
+			m_Map[i].minHeight = 0;
+			m_Map[i].maxHeight = 0;
 			Reader.Serialize(m_Map[i].dynDataHeightMap, sizeof(sChunkHeightmapData)*(CHUNK_RESOLUTION+2)*(CHUNK_RESOLUTION + 2));			
+			for (int iy = 0; iy<CHUNK_RESOLUTION + 2; iy++)
+				for (int ix = 0; ix < CHUNK_RESOLUTION + 2; ix++) {
+					uint16 height = m_Map[i].dynDataHeightMap[ix][iy].height;
+					if (m_Map[i].minHeight > height)
+						m_Map[i].minHeight = height;
+					if (m_Map[i].maxHeight < height)
+						m_Map[i].maxHeight = height;
+				}
 
 			m_Map[i].HeightmapChanged = true;
 			i++;
@@ -67,7 +79,6 @@ bool cTerraformaGrid::loadFromFile(FString FileName) {
 			m_Map[i].TextureChanged = true;
 			i++;
 		}
-	m_DataChanged = true;
 	return true;
 }
 

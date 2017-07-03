@@ -18,6 +18,10 @@ struct sChunkTextureData {
 
 
 struct sTerraformaGridChunk {
+	uint16 minHeight;
+	uint16 maxHeight;
+	int x;
+	int y;
 	sChunkHeightmapData dynDataHeightMap[CHUNK_RESOLUTION+2][CHUNK_RESOLUTION + 2];
 	sChunkTextureData	dynDataTexture[CHUNK_RESOLUTION + 2][CHUNK_RESOLUTION + 2];
 	bool HeightmapChanged;
@@ -29,14 +33,11 @@ protected:
 	sTerraformaGridChunk* m_Map;
 	int m_Width;
 	int m_Height;
-	bool m_DataChanged;
 	void init(int width, int height);
 	inline int getIndex(int x, int y) { return x + y*m_Width; }
 public:
 	cTerraformaGrid();	
 
-	bool isDataChanged() { return m_DataChanged; }
-	void resetDataChangedFlag() { m_DataChanged = false; }
 	int width() { return m_Width; }
 	int height() { return m_Height; }
 	sTerraformaGridChunk* getData(int x, int y) { return &m_Map[getIndex(x,y)]; }

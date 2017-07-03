@@ -28,10 +28,11 @@ void AcTerraformaLandscapeActor::BeginPlay()
 void AcTerraformaLandscapeActor::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	//if (TerraformaLandscapeComponent->needInvalidate()){
+	if (TerraformaLandscapeComponent->needInvalidate()){
+		TerraformaLandscapeComponent->resetInvalidateFlag();
 		SetActorLocation(FVector(rand() % 10, 0, 0));
 		//MarkRenderStateDirty ??
-	//}
+	}
 	
 }
 
