@@ -3,6 +3,7 @@
 #include "PhysicsEngine/BodySetup.h"
 #include "DynamicMeshBuilder.h"
 #include "cTerraformaGrid.h"
+#include "cCameraGrid.h"
 
 class FTerraformaMeshVertexBuffer : public FVertexBuffer
 {
@@ -78,30 +79,9 @@ struct sIndexRange {
 	sIndexRange() {}
 };
 
-enum class eSeamSide {
-	MINUS_Y = 0,
-	PLUS_Y,
-	MINUS_X,
-	PLUS_C,
-	COUNT
-};
-
 struct sTerraformaChunkLOD {
-	sIndexRange bodyFull;
-	sIndexRange bodyForSeam;
-	sIndexRange seams[eSeamSide::COUNT];
+	sIndexRange variants[SEAM_COUNT];
 	sTerraformaChunkLOD() {}
-};
-
-enum class eChunkLOD {
-	LOD_0 = 0,
-	LOD_1,
-	LOD_2,
-	LOD_3,
-	LOD_4,
-	LOD_5,
-
-	COUNT
 };
 
 struct sChunkInfo {

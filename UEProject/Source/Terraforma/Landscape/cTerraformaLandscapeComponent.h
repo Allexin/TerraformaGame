@@ -4,9 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "Components/MeshComponent.h"
+#include "Camera/CameraActor.h"
 #include "PhysicsEngine/BodySetup.h"
 #include "DynamicMeshBuilder.h"
 #include "cTerraformaGrid.h"
+#include "cCameraGrid.h"
 #include "cTerraformaMeshSceneProxy.h"
 #include "cTerraformaLandscapeComponent.generated.h"
 
@@ -27,6 +29,7 @@ class TERRAFORMA_API UcTerraformaLandscapeComponent : public UMeshComponent
 	friend class FcTerraformaMeshSceneProxy;
 protected:
 	cTerraformaGrid						m_Landscape;
+	cCameraGrid							m_CameraGrid;
 	
 	UPROPERTY()
 	TArray<UMaterialInstanceDynamic*>	m_DynMaterialInstances;
@@ -44,6 +47,8 @@ protected:
 public:
 	UPROPERTY(EditAnywhere, Category = "Landscape")
 		FName VMPWorld;
+	UPROPERTY(EditAnywhere, Category = "Landscape")
+		bool Wireframe;
 	/*Delay between "update graphics" calls*/
 	UPROPERTY(EditAnywhere, Category = "Terraforming")
 		float ApplyTerraformingDelay;
@@ -75,8 +80,9 @@ public:
 	virtual void OnRegister() override;
 	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction) override;
 	// End UPrimitiveComponent interface.
-
+#if WITH_EDITOR  
 	virtual void PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent) override;
+#endif
 private:
 	virtual FBoxSphereBounds CalcBounds(const FTransform & LocalToWorld) const override;
 

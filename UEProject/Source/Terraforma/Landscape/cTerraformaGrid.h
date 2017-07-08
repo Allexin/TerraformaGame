@@ -1,6 +1,5 @@
 #pragma once
 
-const float CHUNK_SIZE_CM = 1000.f;
 const int CHUNK_RESOLUTION = 64;
 const float CHUNK_TEXTURE_STEP = 1.0f / (CHUNK_RESOLUTION + 2);
 
@@ -14,8 +13,6 @@ struct sChunkTextureData {
 	uint8 blue;
 	uint8 reserved;
 };
-
-
 
 struct sTerraformaGridChunk {
 	uint16 minHeight;
@@ -38,8 +35,8 @@ protected:
 public:
 	cTerraformaGrid();	
 
-	int width() { return m_Width; }
-	int height() { return m_Height; }
+	int width() const { return m_Width; }
+	int height() const { return m_Height; }
 	sTerraformaGridChunk* getData(int x, int y) { return &m_Map[getIndex(x,y)]; }
 	sTerraformaGridChunk* getData(int index) { return &m_Map[index]; }
 

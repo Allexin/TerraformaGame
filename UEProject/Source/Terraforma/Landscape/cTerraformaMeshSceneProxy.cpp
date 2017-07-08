@@ -7,8 +7,9 @@ inline int getVertexIndex(int x, int y, int step = 1) {
 
 void GenerateChunk(int step, sTerraformaChunkLOD& chunk, FTerraformaMeshIndexBuffer& indexBuffer) {
 	int Resolution = CHUNK_RESOLUTION / step;
-	chunk.bodyFull.start = indexBuffer.Indices.Num();
-	chunk.bodyFull.trianglesCount = 0;
+
+	chunk.variants[0].start = indexBuffer.Indices.Num();
+	chunk.variants[0].trianglesCount = 0;
 	for (int y = 0; y<Resolution; y++)
 		for (int x = 0; x < Resolution; x++) {
 			int indexLT = getVertexIndex(x, y, step);
@@ -25,10 +26,268 @@ void GenerateChunk(int step, sTerraformaChunkLOD& chunk, FTerraformaMeshIndexBuf
 			indexBuffer.Indices.Add(indexRT);
 			indexBuffer.Indices.Add(indexLB);
 
-			chunk.bodyFull.trianglesCount += 2;
+			chunk.variants[0].trianglesCount += 2;
 		}
 
-	//TODO - generate LODS with seams
+	for (unsigned char i = 1; i < SEAM_COUNT; i++) {
+		chunk.variants[i].start = indexBuffer.Indices.Num();
+		chunk.variants[i].trianglesCount = 0;
+		//FILL CENTER
+		for (int y = 1; y<Resolution-1; y++)
+			for (int x = 1; x < Resolution-1; x++) {
+				int indexLT = getVertexIndex(x, y, step);
+				int indexRT = getVertexIndex(x + 1, y, step);
+				int indexLB = getVertexIndex(x, y + 1, step);
+				int indexRB = getVertexIndex(x + 1, y + 1, step);
+
+
+				indexBuffer.Indices.Add(indexLB);
+				indexBuffer.Indices.Add(indexRT);
+				indexBuffer.Indices.Add(indexLT);
+
+				indexBuffer.Indices.Add(indexRB);
+				indexBuffer.Indices.Add(indexRT);
+				indexBuffer.Indices.Add(indexLB);
+
+				chunk.variants[i].trianglesCount += 2;
+			}
+		
+		//FILL seams
+		if ((i & SEAM_MINUS_X_FLAG) == 0) {
+			//default seam
+			int x = 0;
+			for (int y = 1; y < Resolution-1; y++) {
+
+				int indexLT = getVertexIndex(x, y, step);
+				int indexRT = getVertexIndex(x + 1, y, step);
+				int indexLB = getVertexIndex(x, y + 1, step);
+				int indexRB = getVertexIndex(x + 1, y + 1, step);
+
+
+				indexBuffer.Indices.Add(indexLB);
+				indexBuffer.Indices.Add(indexRT);
+				indexBuffer.Indices.Add(indexLT);
+
+				indexBuffer.Indices.Add(indexRB);
+				indexBuffer.Indices.Add(indexRT);
+				indexBuffer.Indices.Add(indexLB);
+
+				chunk.variants[i].trianglesCount += 2;
+			}
+			int y = 0;
+			indexBuffer.Indices.Add(getVertexIndex(x, y, step));
+			indexBuffer.Indices.Add(getVertexIndex(x, y + 1, step));
+			indexBuffer.Indices.Add(getVertexIndex(x + 1, y + 1, step));
+
+			y = Resolution-1;
+			indexBuffer.Indices.Add(getVertexIndex(x, y, step));
+			indexBuffer.Indices.Add(getVertexIndex(x, y + 1, step));
+			indexBuffer.Indices.Add(getVertexIndex(x + 1, y, step));
+			chunk.variants[i].trianglesCount += 2;
+			
+		}
+		else {
+			//-x seam with next lod
+			int x = 0;
+			for (int y = 0; y < Resolution - 1; y+=2) {
+				int index0 = getVertexIndex(x, y, step);
+				int index1 = getVertexIndex(x + 1, y + 1, step);
+				int index2 = getVertexIndex(x, y + 2, step);
+				int index3 = getVertexIndex(x + 1, y + 2, step);
+				int index4 = getVertexIndex(x + 1, y + 3, step);
+
+				indexBuffer.Indices.Add(index2);
+				indexBuffer.Indices.Add(index1);
+				indexBuffer.Indices.Add(index0);
+				chunk.variants[i].trianglesCount += 1;
+				if (y < Resolution - 2) {
+					indexBuffer.Indices.Add(index2);
+					indexBuffer.Indices.Add(index3);
+					indexBuffer.Indices.Add(index1);
+					indexBuffer.Indices.Add(index2);
+					indexBuffer.Indices.Add(index4);
+					indexBuffer.Indices.Add(index3);
+					chunk.variants[i].trianglesCount += 2;
+				}
+			}
+		}
+
+		if ((i & SEAM_PLUS_X_FLAG) == 0) {
+			//default seam
+			int x = Resolution - 1;
+			for (int y = 1; y < Resolution-1; y++) {
+
+				int indexLT = getVertexIndex(x, y, step);
+				int indexRT = getVertexIndex(x + 1, y, step);
+				int indexLB = getVertexIndex(x, y + 1, step);
+				int indexRB = getVertexIndex(x + 1, y + 1, step);
+
+
+				indexBuffer.Indices.Add(indexLB);
+				indexBuffer.Indices.Add(indexRT);
+				indexBuffer.Indices.Add(indexLT);
+
+				indexBuffer.Indices.Add(indexRB);
+				indexBuffer.Indices.Add(indexRT);
+				indexBuffer.Indices.Add(indexLB);
+
+				chunk.variants[i].trianglesCount += 2;
+			}
+			int y = 0;
+			indexBuffer.Indices.Add(getVertexIndex(x, y + 1, step));
+			indexBuffer.Indices.Add(getVertexIndex(x + 1, y + 1, step));
+			indexBuffer.Indices.Add(getVertexIndex(x + 1, y, step));
+			y = Resolution - 1;
+			indexBuffer.Indices.Add(getVertexIndex(x + 1, y + 1, step));
+			indexBuffer.Indices.Add(getVertexIndex(x + 1, y, step));
+			indexBuffer.Indices.Add(getVertexIndex(x, y, step));
+
+			chunk.variants[i].trianglesCount += 2;
+		}
+		else {
+			//+x seam with next lod			
+			int x = Resolution;
+			for (int y = 0; y < Resolution - 1; y += 2) {
+				int index0 = getVertexIndex(x, y, step);
+				int index1 = getVertexIndex(x - 1, y + 1, step);
+				int index2 = getVertexIndex(x, y + 2, step);
+				int index3 = getVertexIndex(x - 1, y + 2, step);
+				int index4 = getVertexIndex(x - 1, y + 3, step);
+
+				indexBuffer.Indices.Add(index1);
+				indexBuffer.Indices.Add(index2);
+				indexBuffer.Indices.Add(index0);
+				chunk.variants[i].trianglesCount += 1;
+				if (y < Resolution - 2) {
+					indexBuffer.Indices.Add(index3);
+					indexBuffer.Indices.Add(index2);
+					indexBuffer.Indices.Add(index1);
+					indexBuffer.Indices.Add(index3);
+					indexBuffer.Indices.Add(index4);
+					indexBuffer.Indices.Add(index2);
+					chunk.variants[i].trianglesCount += 2;
+				}
+			}
+		}
+
+		if ((i & SEAM_MINUS_Y_FLAG) == 0) {
+			//default seam
+			int y = 0;
+			for (int x = 1; x < Resolution - 1; x++) {
+
+				int indexLT = getVertexIndex(x, y, step);
+				int indexRT = getVertexIndex(x + 1, y, step);
+				int indexLB = getVertexIndex(x, y + 1, step);
+				int indexRB = getVertexIndex(x + 1, y + 1, step);
+
+
+				indexBuffer.Indices.Add(indexLB);
+				indexBuffer.Indices.Add(indexRT);
+				indexBuffer.Indices.Add(indexLT);
+
+				indexBuffer.Indices.Add(indexRB);
+				indexBuffer.Indices.Add(indexRT);
+				indexBuffer.Indices.Add(indexLB);
+
+				chunk.variants[i].trianglesCount += 2;
+			}
+			int x = 0;
+			indexBuffer.Indices.Add(getVertexIndex(x, y, step));
+			indexBuffer.Indices.Add(getVertexIndex(x + 1, y + 1, step));
+			indexBuffer.Indices.Add(getVertexIndex(x + 1, y, step));
+			x = Resolution - 1;
+			indexBuffer.Indices.Add(getVertexIndex(x, y + 1, step));
+			indexBuffer.Indices.Add(getVertexIndex(x + 1, y, step));
+			indexBuffer.Indices.Add(getVertexIndex(x, y, step));
+
+			chunk.variants[i].trianglesCount += 2;
+		}
+		else {
+			//-y seam with next lod
+			int y = 0;
+			for (int x = 0; x < Resolution - 1; x += 2) {
+				int index0 = getVertexIndex(x, y, step);
+				int index1 = getVertexIndex(x + 1, y + 1, step);
+				int index2 = getVertexIndex(x + 2, y, step);
+				int index3 = getVertexIndex(x + 2, y + 1, step);
+				int index4 = getVertexIndex(x + 3, y + 1, step);
+
+				indexBuffer.Indices.Add(index0);
+				indexBuffer.Indices.Add(index1);
+				indexBuffer.Indices.Add(index2);
+				chunk.variants[i].trianglesCount += 1;
+				if (x < Resolution - 2) {
+					indexBuffer.Indices.Add(index1);
+					indexBuffer.Indices.Add(index3);
+					indexBuffer.Indices.Add(index2);
+					indexBuffer.Indices.Add(index2);
+					indexBuffer.Indices.Add(index3);
+					indexBuffer.Indices.Add(index4);
+					chunk.variants[i].trianglesCount += 2;
+				}
+			}
+		}
+
+		if ((i & SEAM_PLUS_Y_FLAG) == 0) {
+			//default seam
+			int y = Resolution -1;
+			for (int x = 1; x < Resolution - 1; x++) {
+
+				int indexLT = getVertexIndex(x, y, step);
+				int indexRT = getVertexIndex(x + 1, y, step);
+				int indexLB = getVertexIndex(x, y + 1, step);
+				int indexRB = getVertexIndex(x + 1, y + 1, step);
+
+
+				indexBuffer.Indices.Add(indexLB);
+				indexBuffer.Indices.Add(indexRT);
+				indexBuffer.Indices.Add(indexLT);
+
+				indexBuffer.Indices.Add(indexRB);
+				indexBuffer.Indices.Add(indexRT);
+				indexBuffer.Indices.Add(indexLB);
+
+				chunk.variants[i].trianglesCount += 2;
+			}
+			int x = 0;
+			indexBuffer.Indices.Add(getVertexIndex(x, y + 1, step));
+			indexBuffer.Indices.Add(getVertexIndex(x + 1, y + 1, step));
+			indexBuffer.Indices.Add(getVertexIndex(x + 1, y, step));
+			x = Resolution - 1;
+			indexBuffer.Indices.Add(getVertexIndex(x, y + 1, step));
+			indexBuffer.Indices.Add(getVertexIndex(x + 1, y + 1, step));
+			indexBuffer.Indices.Add(getVertexIndex(x, y, step));
+
+			chunk.variants[i].trianglesCount += 2;
+		}
+		else {
+			//+y seam with next lod			
+			int y = Resolution;
+			for (int x = 0; x < Resolution - 1; x += 2) {
+				int index0 = getVertexIndex(x, y, step);
+				int index1 = getVertexIndex(x + 1, y - 1, step);
+				int index2 = getVertexIndex(x + 2, y, step);
+				int index3 = getVertexIndex(x + 2, y - 1, step);
+				int index4 = getVertexIndex(x + 3, y - 1, step);
+
+				indexBuffer.Indices.Add(index0);
+				indexBuffer.Indices.Add(index2);
+				indexBuffer.Indices.Add(index1);
+				chunk.variants[i].trianglesCount += 1;
+				if (x < Resolution - 2) {
+					indexBuffer.Indices.Add(index1);
+					indexBuffer.Indices.Add(index2);
+					indexBuffer.Indices.Add(index3);
+					indexBuffer.Indices.Add(index3);
+					indexBuffer.Indices.Add(index2);
+					indexBuffer.Indices.Add(index4);
+					chunk.variants[i].trianglesCount += 2;
+				}
+			}
+			
+		}
+
+	}
 }
 
 
@@ -94,27 +353,59 @@ void FcTerraformaMeshSceneProxy::ReinitChunks() {
 
 	m_Chunks.Init(chunk, m_ChunksCount);
 
-	FMatrix MeshTransform;
-	MeshTransform.SetIdentity();
-	int i = 0;
-	for (int y = 0; y<m_Height; y++)
-		for (int x = 0; x < m_Width; x++) {
-			m_Chunks[i].Data = m_LandscapeComponent->m_Landscape.getData(x, y);
+	const TArray<sGridVisibleState>& VisibilityGrid = m_LandscapeComponent->m_CameraGrid.VisibilityGrid();
 
-			FMeshBatch& Mesh = m_Chunks[i].Mesh;
-			m_Chunks[i].MaterialInst = m_LandscapeComponent->m_DynMaterialInstances[i];
-			Mesh.MaterialRenderProxy = m_Chunks[i].MaterialInst->GetRenderProxy(false);
-			FMeshBatchElement& BatchElement = Mesh.Elements[0];
-			BatchElement.IndexBuffer = &IndexBuffer;
-			MeshTransform.SetOrigin(FVector(x*CHUNK_SIZE_CM, y*CHUNK_SIZE_CM, 0));
-			m_Chunks[i].Transform = MeshTransform;
-			BatchElement.FirstIndex = m_LODS[(int)eChunkLOD::LOD_1].bodyFull.start;
-			BatchElement.NumPrimitives = m_LODS[(int)eChunkLOD::LOD_1].bodyFull.trianglesCount;
-			BatchElement.MinVertexIndex = 0;
-			BatchElement.MaxVertexIndex = VertexBuffer.Vertices.Num() - 1;
+	if (VisibilityGrid.Num() != m_ChunksCount) {
+		FMatrix MeshTransform;
+		MeshTransform.SetIdentity();
+		int i = 0;
+		for (int y = 0; y < m_Height; y++)
+			for (int x = 0; x < m_Width; x++) {
+				m_Chunks[i].Data = m_LandscapeComponent->m_Landscape.getData(x, y);
 
-			i++;
-		}
+				FMeshBatch& Mesh = m_Chunks[i].Mesh;
+				m_Chunks[i].MaterialInst = m_LandscapeComponent->m_DynMaterialInstances[i];
+				Mesh.MaterialRenderProxy = m_Chunks[i].MaterialInst->GetRenderProxy(false);
+				FMeshBatchElement& BatchElement = Mesh.Elements[0];
+				BatchElement.IndexBuffer = &IndexBuffer;
+				MeshTransform.SetOrigin(FVector(x*CHUNK_SIZE_CM, y*CHUNK_SIZE_CM, 0));
+				m_Chunks[i].Transform = MeshTransform;
+				BatchElement.FirstIndex = m_LODS[(int)eChunkLOD::LOD_5].variants[0].start;
+				BatchElement.NumPrimitives = m_LODS[(int)eChunkLOD::LOD_5].variants[0].trianglesCount;
+				BatchElement.MinVertexIndex = 0;
+				BatchElement.MaxVertexIndex = VertexBuffer.Vertices.Num() - 1;
+
+				i++;
+			}
+	}
+	else {
+		FMatrix MeshTransform;
+		MeshTransform.SetIdentity();
+		int i = 0;
+		for (int y = 0; y < m_Height; y++)
+			for (int x = 0; x < m_Width; x++) {
+				if (VisibilityGrid[i].visible) {
+					m_Chunks[i].Data = m_LandscapeComponent->m_Landscape.getData(x, y);
+
+					eChunkLOD lod = VisibilityGrid[i].lod;
+					unsigned char seamVariant = VisibilityGrid[i].seamID;
+
+					FMeshBatch& Mesh = m_Chunks[i].Mesh;
+					m_Chunks[i].MaterialInst = m_LandscapeComponent->m_DynMaterialInstances[i];
+					Mesh.MaterialRenderProxy = m_Chunks[i].MaterialInst->GetRenderProxy(false);
+					FMeshBatchElement& BatchElement = Mesh.Elements[0];
+					BatchElement.IndexBuffer = &IndexBuffer;
+					MeshTransform.SetOrigin(FVector(x*CHUNK_SIZE_CM, y*CHUNK_SIZE_CM, 0));
+					m_Chunks[i].Transform = MeshTransform;
+					BatchElement.FirstIndex = m_LODS[(int)lod].variants[seamVariant].start;
+					BatchElement.NumPrimitives = m_LODS[(int)lod].variants[seamVariant].trianglesCount;
+					BatchElement.MinVertexIndex = 0;
+					BatchElement.MaxVertexIndex = VertexBuffer.Vertices.Num() - 1;
+				}
+
+				i++;
+			}
+	}
 }
 
 void FcTerraformaMeshSceneProxy::GetDynamicMeshElements(const TArray<const FSceneView*>& Views, const FSceneViewFamily& ViewFamily, uint32 VisibilityMap, class FMeshElementCollector& Collector) const {
@@ -131,9 +422,10 @@ void FcTerraformaMeshSceneProxy::DrawStaticElements(FStaticPrimitiveDrawInterfac
 	if (m_ChunksCount == 0)
 		return;
 
-	for (int i = 0; i < m_Chunks.Num(); i++) {
+	for (int i = 0; i < m_ChunksCount; i++) {
 		sChunkInfo& chunk = (sChunkInfo&)m_Chunks[i];
 		FMeshBatch &Mesh = chunk.Mesh;
+		Mesh.bWireframe = m_LandscapeComponent->Wireframe;
 		m_Chunks[i].MaterialInst = m_LandscapeComponent->m_DynMaterialInstances[i];
 		Mesh.MaterialRenderProxy = m_Chunks[i].MaterialInst->GetRenderProxy(false);
 		Mesh.Elements[0].PrimitiveUniformBuffer = CreatePrimitiveUniformBufferImmediate(chunk.Transform, GetBounds(), GetLocalBounds(), true, UseEditorDepthTest());

@@ -25,13 +25,13 @@ void UcTerraformaLandscapeComponent::ReinitMaterials() {
 
 		if (i >= MaterialsReadyCount) {
 			m_HeightmapTextures[i] = UTexture2D::CreateTransient(CHUNK_RESOLUTION + 2, CHUNK_RESOLUTION + 2, PF_R8G8);// PF_R16_UINT);
-			m_HeightmapTextures[i]->MipGenSettings = TextureMipGenSettings::TMGS_NoMipmaps;
+			//m_HeightmapTextures[i]->MipGenSettings = TextureMipGenSettings::TMGS_NoMipmaps;
 			m_HeightmapTextures[i]->SRGB = 0;
-			m_HeightmapTextures[i]->Filter = TextureFilter::TF_Nearest;//  ESamplerFilter::SF_Point;
+			m_HeightmapTextures[i]->Filter = TextureFilter::TF_Nearest;
 
 			m_ColorTextures[i] = UTexture2D::CreateTransient(CHUNK_RESOLUTION + 2, CHUNK_RESOLUTION + 2, PF_R8G8B8A8);
-			m_ColorTextures[i]->MipGenSettings = TextureMipGenSettings::TMGS_NoMipmaps;
-			m_ColorTextures[i]->Filter = TextureFilter::TF_Trilinear;//  ESamplerFilter::SF_Point;
+			//m_ColorTextures[i]->MipGenSettings = TextureMipGenSettings::TMGS_NoMipmaps;
+			m_ColorTextures[i]->Filter = TextureFilter::TF_Trilinear;
 
 			m_DynMaterialInstances[i] = UMaterialInstanceDynamic::Create(baseMaterial, this);
 			m_DynMaterialInstances[i]->SetTextureParameterValue(FName("PHeightmap"), m_HeightmapTextures[i]);
@@ -71,6 +71,7 @@ UcTerraformaLandscapeComponent::UcTerraformaLandscapeComponent():UMeshComponent(
 	MaterialsReadyCount = 0;
 	m_ApplyTerraformingCounter = 0;
 	m_Terraformed = false;
+	Wireframe = false;
 }
 
 void UcTerraformaLandscapeComponent::OnRegister() {
@@ -79,6 +80,21 @@ void UcTerraformaLandscapeComponent::OnRegister() {
 }
 
 void UcTerraformaLandscapeComponent::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction) {
+	if (GEngine) {
+		UWorld* world = GetWorld();
+		if (world) {
+			APlayerController* pc = GEngine->GetFirstLocalPlayerController(world);
+			if (pc) {
+				APlayerCameraManager* cameraManager = pc->PlayerCameraManager;
+				if (cameraManager) {
+					if (m_CameraGrid.recalcVisibleItems(cameraManager, FVector(0, 0, 0), m_Landscape.width(), m_Landscape.height(), 5000))
+						MarkRenderStateDirty();
+				}
+			}
+		}
+	}
+
+
 	m_ApplyTerraformingCounter += DeltaTime;
 	if (m_Terraformed && m_ApplyTerraformingCounter >= ApplyTerraformingDelay) {
 		m_Terraformed = false;
@@ -138,7 +154,7 @@ FBoxSphereBounds UcTerraformaLandscapeComponent::CalcBounds(const FTransform & L
 	FVector vecMin(0,0,0);
 
 	// Maximum Vector: It's set to the first vertex's position initially (NULL == FVector::ZeroVector might be required and a known vertex vector has intrinsically valid values)
-	FVector vecMax(CHUNK_SIZE_CM*64, CHUNK_SIZE_CM * 64, CHUNK_SIZE_CM * 64);
+	FVector vecMax(CHUNK_SIZE_CM*m_Landscape.width(), CHUNK_SIZE_CM * m_Landscape.height(), 1000);
 	
 	FVector vecOrigin = ((vecMax - vecMin) / 2) + vecMin;	/* Origin = ((Max Vertex's Vector - Min Vertex's Vector) / 2 ) + Min Vertex's Vector */
 	FVector BoxPoint = vecMax - vecMin;			/* The difference between the "Maximum Vertex" and the "Minimum Vertex" is our actual Bounds Box */
