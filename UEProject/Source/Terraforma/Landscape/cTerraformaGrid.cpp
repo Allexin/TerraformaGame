@@ -6,8 +6,6 @@ cTerraformaGrid::cTerraformaGrid() {
 	m_Width = 0;
 	m_Height = 0;
 	m_Map = nullptr;
-
-	init(8,4);
 };
 
 void cTerraformaGrid::init(int width, int height) {
@@ -29,21 +27,13 @@ void cTerraformaGrid::init(int width, int height) {
 
 const uint32 TFA_FILE_VERSION = 1;
 
-bool cTerraformaGrid::loadFromFile(FString FileName) {
-	TArray<uint8> tfaRAW;
-	if (!FFileHelper::LoadFileToArray(tfaRAW, *FileName))
-	{
-		if (GEngine)
-			GEngine->AddOnScreenDebugMessage(-1, 5.5f, FColor::Red, "Cant open terraforma landscape from " + FileName);
-		return false;
-	}
-
-	FMemoryReader Reader(tfaRAW);
+bool cTerraformaGrid::loadFromArray(const TArray<uint8>& TFARawData) {
+	FMemoryReader Reader(TFARawData);
 	uint32 fileVersion;
 	Reader.Serialize(&fileVersion, sizeof(uint32));
 	if (fileVersion != TFA_FILE_VERSION) {
 		if (GEngine)
-			GEngine->AddOnScreenDebugMessage(-1, 5.5f, FColor::Red, "Incorrect file version in terraforma landscape " + FileName);
+			GEngine->AddOnScreenDebugMessage(-1, 5.5f, FColor::Red, "Incorrect file version in terraforma landscape ");
 		return false;
 	}
 	uint32 chunksXCount;
@@ -58,7 +48,7 @@ bool cTerraformaGrid::loadFromFile(FString FileName) {
 			m_Map[i].y = y;
 			m_Map[i].minHeight = 0;
 			m_Map[i].maxHeight = 0;
-			Reader.Serialize(m_Map[i].dynDataHeightMap, sizeof(sChunkHeightmapData)*(CHUNK_RESOLUTION+2)*(CHUNK_RESOLUTION + 2));			
+			Reader.Serialize(m_Map[i].dynDataHeightMap, sizeof(sChunkHeightmapData)*(CHUNK_RESOLUTION + 2)*(CHUNK_RESOLUTION + 2));
 			for (int iy = 0; iy<CHUNK_RESOLUTION + 2; iy++)
 				for (int ix = 0; ix < CHUNK_RESOLUTION + 2; ix++) {
 					uint16 height = m_Map[i].dynDataHeightMap[ix][iy].height;
@@ -75,11 +65,23 @@ bool cTerraformaGrid::loadFromFile(FString FileName) {
 	for (int y = 0; y<m_Height; y++)
 		for (int x = 0; x < m_Width; x++) {
 			Reader.Serialize(m_Map[i].dynDataTexture, sizeof(sChunkTextureData)*(CHUNK_RESOLUTION + 2)*(CHUNK_RESOLUTION + 2));
-			
+
 			m_Map[i].TextureChanged = true;
 			i++;
 		}
 	return true;
+}
+
+bool cTerraformaGrid::loadFromFile(FString FileName) {
+	TArray<uint8> tfaRAW;
+	if (!FFileHelper::LoadFileToArray(tfaRAW, *FileName))
+	{
+		if (GEngine)
+			GEngine->AddOnScreenDebugMessage(-1, 5.5f, FColor::Red, "Cant open terraforma landscape from " + FileName);
+		return false;
+	}
+
+	return loadFromArray(tfaRAW);
 }
 
 

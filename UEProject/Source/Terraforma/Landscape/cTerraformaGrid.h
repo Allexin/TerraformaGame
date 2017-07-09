@@ -41,6 +41,7 @@ public:
 	sTerraformaGridChunk* getData(int index) { return &m_Map[index]; }
 
 	bool loadFromFile(FString FileName);
+	bool loadFromArray(const TArray<uint8>& TFARawData);
 
 	static void convertVMPtoTFA(FString Path, FString FileName);
 };

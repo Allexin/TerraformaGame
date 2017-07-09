@@ -9,6 +9,7 @@
 #include "DynamicMeshBuilder.h"
 #include "cTerraformaGrid.h"
 #include "cCameraGrid.h"
+#include "TerraformaLandscapeLoader.h"
 #include "cTerraformaMeshSceneProxy.h"
 #include "cTerraformaLandscapeComponent.generated.h"
 
@@ -45,8 +46,10 @@ protected:
 	void ReinitMaterials();
 	void loadLevel();
 public:
+	//UPROPERTY(EditAnywhere, Category = "Landscape")
+	//	FName VMPWorld;
 	UPROPERTY(EditAnywhere, Category = "Landscape")
-		FName VMPWorld;
+		UTerraformaLandscapeLoader* TerraformaWorld;
 	UPROPERTY(EditAnywhere, Category = "Landscape")
 		bool Wireframe;
 	/*Delay between "update graphics" calls*/

@@ -16,27 +16,31 @@ void UcTerraformaLandscapeComponent::ReinitMaterials() {
 	int height = m_Landscape.height();
 	UMaterialInterface* baseMaterial = GetMaterial(0);
 	
-	m_HeightmapTextures.SetNum(width*height);
-	m_ColorTextures.SetNum(width*height);
-	m_DynMaterialInstances.SetNum(width*height);
+	if (MaterialsReadyCount < width*height) {
+		m_HeightmapTextures.SetNum(width*height);
+		m_ColorTextures.SetNum(width*height);
+		m_DynMaterialInstances.SetNum(width*height);
+	}
 
 	for (int i = 0; i < width*height; i++) {
 		sTerraformaGridChunk* chunk = m_Landscape.getData(i);
 
-		if (i >= MaterialsReadyCount) {
-			m_HeightmapTextures[i] = UTexture2D::CreateTransient(CHUNK_RESOLUTION + 2, CHUNK_RESOLUTION + 2, PF_R8G8);// PF_R16_UINT);
-			//m_HeightmapTextures[i]->MipGenSettings = TextureMipGenSettings::TMGS_NoMipmaps;
-			m_HeightmapTextures[i]->SRGB = 0;
-			m_HeightmapTextures[i]->Filter = TextureFilter::TF_Nearest;
+		if (i >= MaterialsReadyCount || m_DynMaterialInstances[i]->Parent!= baseMaterial) {
 
-			m_ColorTextures[i] = UTexture2D::CreateTransient(CHUNK_RESOLUTION + 2, CHUNK_RESOLUTION + 2, PF_R8G8B8A8);
-			//m_ColorTextures[i]->MipGenSettings = TextureMipGenSettings::TMGS_NoMipmaps;
-			m_ColorTextures[i]->Filter = TextureFilter::TF_Trilinear;
+			if (i >= MaterialsReadyCount) {
+				m_HeightmapTextures[i] = UTexture2D::CreateTransient(CHUNK_RESOLUTION + 2, CHUNK_RESOLUTION + 2, PF_R8G8);// PF_R16_UINT);
+				//m_HeightmapTextures[i]->MipGenSettings = TextureMipGenSettings::TMGS_NoMipmaps;
+				m_HeightmapTextures[i]->SRGB = 0;
+				m_HeightmapTextures[i]->Filter = TextureFilter::TF_Nearest;
+
+				m_ColorTextures[i] = UTexture2D::CreateTransient(CHUNK_RESOLUTION + 2, CHUNK_RESOLUTION + 2, PF_R8G8B8A8);
+				//m_ColorTextures[i]->MipGenSettings = TextureMipGenSettings::TMGS_NoMipmaps;
+				m_ColorTextures[i]->Filter = TextureFilter::TF_Trilinear;
+			}
 
 			m_DynMaterialInstances[i] = UMaterialInstanceDynamic::Create(baseMaterial, this);
 			m_DynMaterialInstances[i]->SetTextureParameterValue(FName("PHeightmap"), m_HeightmapTextures[i]);
 			m_DynMaterialInstances[i]->SetTextureParameterValue(FName("PTexture"), m_ColorTextures[i]);
-			MaterialsReadyCount++;
 		}
 		
 
@@ -55,6 +59,8 @@ void UcTerraformaLandscapeComponent::ReinitMaterials() {
 		m_ColorTextures[i]->UpdateResource();
 		chunk->TextureChanged = false;
 	}
+
+	MaterialsReadyCount = width*height;
 }
 
 UcTerraformaLandscapeComponent::UcTerraformaLandscapeComponent():UMeshComponent() {
@@ -172,6 +178,14 @@ UBodySetup* UcTerraformaLandscapeComponent::GetBodySetup() {
 }
 
 void UcTerraformaLandscapeComponent::loadLevel() {
+	
+	if (TerraformaWorld != NULL) {
+		m_Landscape.loadFromArray(TerraformaWorld->TFAFileData);
+		ReinitMaterials();
+		MarkRenderStateDirty();
+	}
+	/**/
+	/*
 	if (GConfig) {
 
 		//Retrieve Default Game Type
@@ -183,11 +197,11 @@ void UcTerraformaLandscapeComponent::loadLevel() {
 			GGameIni
 		);
 
-		FString tfaFileName = PathToWorlds + "\\" + VMPWorld.ToString() + "\\" + VMPWorld.ToString() + ".tfa";
-		m_Landscape.convertVMPtoTFA(PathToWorlds + "\\" + VMPWorld.ToString(), tfaFileName);
+		FString tfaFileName = PathToWorlds + "\\" + "ABDULA" + "\\" + "ABDULA" + ".tfa";
+		m_Landscape.convertVMPtoTFA(PathToWorlds + "\\" + "ABDULA", tfaFileName);
 		m_Landscape.loadFromFile(tfaFileName);
 		ReinitMaterials();
-	}
+	}/**/
 }
 
 #if WITH_EDITOR  
@@ -196,7 +210,7 @@ void UcTerraformaLandscapeComponent::PostEditChangeProperty(struct FPropertyChan
 	//Get the name of the property that was changed  
 	FName PropertyName = (PropertyChangedEvent.Property != nullptr) ? PropertyChangedEvent.Property->GetFName() : NAME_None;
 
-	if (PropertyName == "VMPWorld") {
+	if (PropertyName == "TerraformaWorld") {
 		loadLevel();
 	}
 	// Call the base class version  

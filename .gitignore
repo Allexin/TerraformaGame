@@ -4,3 +4,6 @@
 /UEProject/Terraforma.VC.db
 /UEProject/Terraforma.sln
 /UEProject/Intermediate
+/TFACompiler/src/Win32/Debug
+/TFACompiler/src/Win32/Release
+/TFACompiler/src/__history

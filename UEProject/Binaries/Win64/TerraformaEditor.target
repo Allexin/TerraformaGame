@@ -37,6 +37,30 @@
 			"IsPrecompiled" : true
 		},
 		{
+			"Path" : "$(ProjectDir)/Plugins/TerraformaLandscapeLoader/Binaries/Win64/UE4Editor-TerraformaLandscapeLoader.dll",
+			"Type" : "DynamicLibrary"
+		},
+		{
+			"Path" : "$(ProjectDir)/Plugins/TerraformaLandscapeLoader/Binaries/Win64/UE4Editor-TerraformaLandscapeLoader.pdb",
+			"Type" : "SymbolFile"
+		},
+		{
+			"Path" : "$(ProjectDir)/Plugins/TerraformaLandscapeLoader/Intermediate/Build/Win64/UE4Editor/Development/UE4Editor-TerraformaLandscapeLoader.lib",
+			"Type" : "ImportLibrary"
+		},
+		{
+			"Path" : "$(ProjectDir)/Plugins/TerraformaLandscapeLoader/Binaries/Win64/UE4Editor-TerraformaLandscapeLoaderImporter.dll",
+			"Type" : "DynamicLibrary"
+		},
+		{
+			"Path" : "$(ProjectDir)/Plugins/TerraformaLandscapeLoader/Binaries/Win64/UE4Editor-TerraformaLandscapeLoaderImporter.pdb",
+			"Type" : "SymbolFile"
+		},
+		{
+			"Path" : "$(ProjectDir)/Plugins/TerraformaLandscapeLoader/Intermediate/Build/Win64/UE4Editor/Development/UE4Editor-TerraformaLandscapeLoaderImporter.lib",
+			"Type" : "ImportLibrary"
+		},
+		{
 			"Path" : "$(EngineDir)/Plugins/2D/Paper2D/Binaries/Win64/UE4Editor-Paper2D.dll",
 			"Type" : "DynamicLibrary",
 			"IsPrecompiled" : true
@@ -5539,6 +5563,10 @@
 			"IsPrecompiled" : true
 		},
 		{
+			"Path" : "$(ProjectDir)/Plugins/TerraformaLandscapeLoader/Binaries/Win64/UE4Editor.modules",
+			"Type" : "RequiredResource"
+		},
+		{
 			"Path" : "$(ProjectDir)/Binaries/Win64/UE4Editor.modules",
 			"Type" : "RequiredResource"
 		}
@@ -5547,6 +5575,10 @@
 	[
 		{
 			"Path" : "$(ProjectDir)/Terraforma.uproject",
+			"Type" : "UFS"
+		},
+		{
+			"Path" : "$(ProjectDir)/Plugins/TerraformaLandscapeLoader/TerraformaLandscapeLoader.uplugin",
 			"Type" : "UFS"
 		},
 		{

@@ -1,0 +1,30 @@
+{
+	"FileVersion" : 1,
+	"Version" : 1,
+	"VersionName" : "1.0",
+	"FriendlyName" : "Terraforma Landscape Asset Plugin",
+	"Description" : "Add possibility of importing landscape into Terraforma Landscape component",
+	"Category" : "Landscape",
+	"CreatedBy" : "@!!ex",
+	"CreatedByURL" : "http://sol-online.org",
+	"DocsURL" : "",
+	"MarketplaceURL" : "",
+	"SupportURL" : "",
+	"EnabledByDefault" : false,
+	"CanContainContent" : false,
+	"IsBetaVersion" : false,
+	"Installed" : false,
+	"Modules" :
+	[
+		{
+			"Name" : "TerraformaLandscapeLoader",
+			"Type" : "Runtime",
+			"LoadingPhase" : "Default"
+		},
+		{
+			"Name" : "TerraformaLandscapeLoaderImporter",
+			"Type" : "Editor",
+			"LoadingPhase" : "Default"
+		}
+	]
+}

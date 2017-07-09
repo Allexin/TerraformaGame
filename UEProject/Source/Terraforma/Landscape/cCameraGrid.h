@@ -5,6 +5,8 @@
 #include "DrawDebugHelpers.h"
 
 const float CHUNK_SIZE_CM = 1000.f;
+const int CONVEX_MIN_BORDER = 2;
+const float CONVEX_BORDER_INCREASE_PER_CHUNK = 0.1;
 
 enum class eChunkLOD {
 	LOD_0 = 0,

@@ -209,6 +209,20 @@ bool cCameraGrid::getFrustumPoints(FVector cameraPos, FRotationMatrix cameraRot,
 	//Also its possible 3 point make another line, but important its only if this line is first and horizontal
 	if (ZonePointsClean[2].Y == ZonePointsClean[0].Y)
 		ZonePointsClean.RemoveAt(1);
+
+	FIntPoint ConvexCenter(0,0);
+	for (int i = 0; i < ZonePointsClean.Num(); i++) {
+		ConvexCenter += ZonePointsClean[i];
+	}
+	ConvexCenter /= ZonePointsClean.Num();
+
+	FIntPoint cameraChunk((int)((cameraPos.X - gridPos.X) / CHUNK_SIZE_CM), (int)((cameraPos.Y - gridPos.Y) / CHUNK_SIZE_CM));
+	for (int i = 0; i < ZonePointsClean.Num(); i++) {
+		float distToCamera = FMath::Sqrt(FMath::Square(cameraChunk.X - ZonePointsClean[i].X) + FMath::Square(cameraChunk.Y - ZonePointsClean[i].Y));
+		int border = (int)(CONVEX_BORDER_INCREASE_PER_CHUNK*distToCamera + CONVEX_MIN_BORDER);
+		ZonePointsClean[i].X += FMath::Sign(ZonePointsClean[i].X - ConvexCenter.X)*border;
+		ZonePointsClean[i].Y += FMath::Sign(ZonePointsClean[i].Y - ConvexCenter.Y)*border;
+	}
 	
 	bool ZoneChanged = m_Convex.Num() != ZonePointsClean.Num();
 	if (!ZoneChanged) {
@@ -256,9 +270,7 @@ void cCameraGrid::fillGrid(int cameraXChunk, int cameraYChunk, int chunksXCount,
 	float xEnd = RightSide[0].start.X;
 	int leftID = 0;
 	int rightID = 0;
-
-	int BORDER = 2;
-	
+		
 	for (int y = yStart; y <= yEnd && y<chunksYCount; y++) {
 		if (y == LeftSide[leftID].end.Y) {
 			xStart = LeftSide[leftID].end.X;
@@ -269,27 +281,11 @@ void cCameraGrid::fillGrid(int cameraXChunk, int cameraYChunk, int chunksXCount,
 			rightID++;
 		}
 		if (y > 0) {
-			int sy = 0;
-			int cy = 1;
-			if (y == yStart) {				
-				cy = BORDER;
-				sy = 1-cy;
-			}
-			else
-			if (y == yEnd) {
-				cy = BORDER+1;
-				sy = 0;
-			}
-			for (int iy = sy + y; iy < cy + y; iy++) {
-				if (iy >= 0 && iy < chunksYCount) {
-					int lx = FMath::Max(0, (int)xStart - BORDER);
-					//int gridIndex = lx + iy*chunksYCount;
-					for (int x = lx; x <= FMath::Min(chunksYCount - 1, (int)xEnd + BORDER); x++) {
-						int gridIndex = x + iy*chunksYCount;
-						m_VisibilityGrid[gridIndex] = getMask(x, iy, cameraXChunk, cameraYChunk);
-						gridIndex++;
-					}
-				}
+			int lx = FMath::Max(0, (int)xStart);
+			int gridIndex = lx + y*chunksYCount;
+			for (int x = lx; x <= FMath::Min(chunksXCount - 1, (int)xEnd); x++) {
+				m_VisibilityGrid[gridIndex] = getMask(x, y, cameraXChunk, cameraYChunk);
+				gridIndex++;
 			}
 		}
 

@@ -15,7 +15,8 @@ public class Terraforma : ModuleRules
             "InputCore",
             "RHI",
             "RenderCore",
-            "ShaderCore" });
+            "ShaderCore",
+            "TerraformaLandscapeLoader"});
 
         PrivateDependencyModuleNames.AddRange(new string[] {  });
 
