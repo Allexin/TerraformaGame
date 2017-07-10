@@ -1,6 +1,11 @@
 #include "cTerraformaGrid.h"
 #include "MemoryReader.h"
 
+void packNormal(float x, float y, float z, sChunkNormalData& outNormal) {
+	outNormal.x = 128 + (int)(x * 128);
+	outNormal.y = 128 + (int)(y * 128);
+	outNormal.z = 128 + (int)(z * 128);
+}
 
 cTerraformaGrid::cTerraformaGrid() {
 	m_Width = 0;
@@ -25,13 +30,13 @@ void cTerraformaGrid::init(int width, int height) {
 	m_Map = new sTerraformaGridChunk[m_Width*m_Height];	
 }
 
-const uint32 TFA_FILE_VERSION = 1;
+const uint32 TFA_FILE_VERSION = 2;
 
 bool cTerraformaGrid::loadFromArray(const TArray<uint8>& TFARawData) {
 	FMemoryReader Reader(TFARawData);
 	uint32 fileVersion;
 	Reader.Serialize(&fileVersion, sizeof(uint32));
-	if (fileVersion != TFA_FILE_VERSION) {
+	if (fileVersion > TFA_FILE_VERSION) {
 		if (GEngine)
 			GEngine->AddOnScreenDebugMessage(-1, 5.5f, FColor::Red, "Incorrect file version in terraforma landscape ");
 		return false;
@@ -48,7 +53,7 @@ bool cTerraformaGrid::loadFromArray(const TArray<uint8>& TFARawData) {
 			m_Map[i].y = y;
 			m_Map[i].minHeight = 0;
 			m_Map[i].maxHeight = 0;
-			Reader.Serialize(m_Map[i].dynDataHeightMap, sizeof(sChunkHeightmapData)*(CHUNK_RESOLUTION + 2)*(CHUNK_RESOLUTION + 2));
+			Reader.Serialize(m_Map[i].dynDataHeightMap, sizeof(sChunkHeightData)*(CHUNK_RESOLUTION + 2)*(CHUNK_RESOLUTION + 2));
 			for (int iy = 0; iy<CHUNK_RESOLUTION + 2; iy++)
 				for (int ix = 0; ix < CHUNK_RESOLUTION + 2; ix++) {
 					uint16 height = m_Map[i].dynDataHeightMap[ix][iy].height;
@@ -69,6 +74,27 @@ bool cTerraformaGrid::loadFromArray(const TArray<uint8>& TFARawData) {
 			m_Map[i].TextureChanged = true;
 			i++;
 		}
+
+	if (fileVersion == 1) {
+		for (int y = 0; y<m_Height; y++)
+			for (int x = 0; x < m_Width; x++) {
+				for (int iy = 0; iy<CHUNK_RESOLUTION+2; iy++)
+					for (int ix = 0; ix < CHUNK_RESOLUTION + 2; ix++) {
+						m_Map[i].dynDataNormalMap[ix][iy].x = 128;
+						m_Map[i].dynDataNormalMap[ix][iy].y = 128;
+						m_Map[i].dynDataNormalMap[ix][iy].z = 255;
+					}
+			}
+	}
+	else {
+		i = 0;
+		for (int y = 0; y<m_Height; y++)
+			for (int x = 0; x < m_Width; x++) {
+				Reader.Serialize(m_Map[i].dynDataNormalMap, sizeof(sChunkNormalData)*(CHUNK_RESOLUTION + 2)*(CHUNK_RESOLUTION + 2));
+				i++;
+			}
+	}
+
 	return true;
 }
 
@@ -188,9 +214,9 @@ void cTerraformaGrid::convertVMPtoTFA(FString Path, FString FileName) {
 				for (int ix = -1; ix < CHUNK_RESOLUTION + 1; ix++) {
 					uint8 h1 = getPixelInLayer(x,y,ix,iy, vmp, LayerShift[1], Resolution);
 					uint8 h2 = getPixelInLayer(x, y, ix, iy, vmp, LayerShift[2], Resolution);
-					sChunkHeightmapData heightmap;
+					sChunkHeightData heightmap;
 					heightmap.height = (h1 << 5) + (h2 & 0x1f);
-					Writer.Serialize(&heightmap, sizeof(sChunkHeightmapData));
+					Writer.Serialize(&heightmap, sizeof(sChunkHeightData));
 				}
 		}
 	for (unsigned int y = 0; y<chunksCount; y++)

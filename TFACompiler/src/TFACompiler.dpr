@@ -43,18 +43,24 @@ begin
 
   TFAFile:=TTFAFile.Create();
 
+  writeln('loading heightmap from '+HeightMapFileName);
   if (not TFAFile.ImportHeightMapTIFF(HeightMapFileName)) then begin
     writeln('Can''t open heightmap file:'+TFAFile.LastError);
     TFAFile.Free();
     Exit;
   end;
 
+  writeln('loading texture from '+TextureFileName);
   if (not TFAFile.ImportTextureBMP(TextureFileName)) then begin
     writeln('Can''t open texture file:'+TFAFile.LastError);
     TFAFile.Free();
     Exit;
   end;
 
+  writeln('generating normal map');
+  TFAFile.GenerateNormalMap();
+
+  writeln('saving to file '+TFAFileName);
   if (not TFAFile.SaveToFile(TFAFileName)) then begin
     writeln('Can''t save tfa file:'+TFAFile.LastError);
     TFAFile.Free();

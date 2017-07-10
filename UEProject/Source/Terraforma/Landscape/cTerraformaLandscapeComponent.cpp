@@ -18,6 +18,7 @@ void UcTerraformaLandscapeComponent::ReinitMaterials() {
 	
 	if (MaterialsReadyCount < width*height) {
 		m_HeightmapTextures.SetNum(width*height);
+		m_NormalmapTextures.SetNum(width*height);
 		m_ColorTextures.SetNum(width*height);
 		m_DynMaterialInstances.SetNum(width*height);
 	}
@@ -33,6 +34,11 @@ void UcTerraformaLandscapeComponent::ReinitMaterials() {
 				m_HeightmapTextures[i]->SRGB = 0;
 				m_HeightmapTextures[i]->Filter = TextureFilter::TF_Nearest;
 
+				m_NormalmapTextures[i] = UTexture2D::CreateTransient(CHUNK_RESOLUTION + 2, CHUNK_RESOLUTION + 2, PF_R8G8B8A8);
+				m_NormalmapTextures[i]->SRGB = 0;
+				m_NormalmapTextures[i]->LODGroup = TEXTUREGROUP_WorldNormalMap;
+				m_NormalmapTextures[i]->Filter = TextureFilter::TF_Nearest;
+				
 				m_ColorTextures[i] = UTexture2D::CreateTransient(CHUNK_RESOLUTION + 2, CHUNK_RESOLUTION + 2, PF_R8G8B8A8);
 				//m_ColorTextures[i]->MipGenSettings = TextureMipGenSettings::TMGS_NoMipmaps;
 				m_ColorTextures[i]->Filter = TextureFilter::TF_Trilinear;
@@ -40,15 +46,22 @@ void UcTerraformaLandscapeComponent::ReinitMaterials() {
 
 			m_DynMaterialInstances[i] = UMaterialInstanceDynamic::Create(baseMaterial, this);
 			m_DynMaterialInstances[i]->SetTextureParameterValue(FName("PHeightmap"), m_HeightmapTextures[i]);
+			m_DynMaterialInstances[i]->SetTextureParameterValue(FName("PNormalmap"), m_NormalmapTextures[i]);
 			m_DynMaterialInstances[i]->SetTextureParameterValue(FName("PTexture"), m_ColorTextures[i]);
 		}
 		
 
 		FTexture2DMipMap& MipH = m_HeightmapTextures[i]->PlatformData->Mips[0];
 		void* DataH = MipH.BulkData.Lock(LOCK_READ_WRITE);
-		FMemory::Memcpy(DataH, chunk->dynDataHeightMap, (CHUNK_RESOLUTION + 2)* (CHUNK_RESOLUTION + 2) * sizeof(sChunkHeightmapData));
+		FMemory::Memcpy(DataH, chunk->dynDataHeightMap, (CHUNK_RESOLUTION + 2)* (CHUNK_RESOLUTION + 2) * sizeof(sChunkHeightData));
 		MipH.BulkData.Unlock();
 		m_HeightmapTextures[i]->UpdateResource();
+
+		FTexture2DMipMap& MipN = m_NormalmapTextures[i]->PlatformData->Mips[0];
+		void* DataN = MipN.BulkData.Lock(LOCK_READ_WRITE);
+		FMemory::Memcpy(DataN, chunk->dynDataNormalMap, (CHUNK_RESOLUTION + 2)* (CHUNK_RESOLUTION + 2) * sizeof(sChunkNormalData));
+		MipN.BulkData.Unlock();
+		m_NormalmapTextures[i]->UpdateResource();
 		chunk->HeightmapChanged = false;
 
 		
@@ -72,6 +85,7 @@ UcTerraformaLandscapeComponent::UcTerraformaLandscapeComponent():UMeshComponent(
 	ApplyTerraformingDelay = 0.5;
 
 	m_HeightmapTextures.SetNum(0);
+	m_NormalmapTextures.SetNum(0);
 	m_ColorTextures.SetNum(0);
 	m_DynMaterialInstances.SetNum(0);
 	MaterialsReadyCount = 0;
@@ -118,9 +132,15 @@ void UcTerraformaLandscapeComponent::TickComponent(float DeltaTime, enum ELevelT
 
 						FTexture2DMipMap& MipH = m_HeightmapTextures[i]->PlatformData->Mips[0];
 						void* DataH = MipH.BulkData.Lock(LOCK_READ_WRITE);
-						FMemory::Memcpy(DataH, chunk->dynDataHeightMap, (CHUNK_RESOLUTION + 2)* (CHUNK_RESOLUTION + 2) * sizeof(sChunkHeightmapData));
+						FMemory::Memcpy(DataH, chunk->dynDataHeightMap, (CHUNK_RESOLUTION + 2)* (CHUNK_RESOLUTION + 2) * sizeof(sChunkHeightData));
 						MipH.BulkData.Unlock();
 						m_HeightmapTextures[i]->UpdateResource();
+
+						FTexture2DMipMap& MipN = m_NormalmapTextures[i]->PlatformData->Mips[0];
+						void* DataN = MipN.BulkData.Lock(LOCK_READ_WRITE);
+						FMemory::Memcpy(DataN, chunk->dynDataNormalMap, (CHUNK_RESOLUTION + 2)* (CHUNK_RESOLUTION + 2) * sizeof(sChunkNormalData));
+						MipN.BulkData.Unlock();
+						m_NormalmapTextures[i]->UpdateResource();
 						chunk->HeightmapChanged = false;
 					}
 					if (chunk->TextureChanged) {

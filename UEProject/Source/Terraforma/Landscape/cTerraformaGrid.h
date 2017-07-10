@@ -3,7 +3,7 @@
 const int CHUNK_RESOLUTION = 64;
 const float CHUNK_TEXTURE_STEP = 1.0f / (CHUNK_RESOLUTION + 2);
 
-struct sChunkHeightmapData {
+struct sChunkHeightData {
 	uint16 height;
 };
 
@@ -14,12 +14,20 @@ struct sChunkTextureData {
 	uint8 reserved;
 };
 
+struct sChunkNormalData {
+	uint8 x;
+	uint8 y;
+	uint8 z;
+	uint8 reserved;
+};
+
 struct sTerraformaGridChunk {
 	uint16 minHeight;
 	uint16 maxHeight;
 	int x;
 	int y;
-	sChunkHeightmapData dynDataHeightMap[CHUNK_RESOLUTION+2][CHUNK_RESOLUTION + 2];
+	sChunkHeightData dynDataHeightMap[CHUNK_RESOLUTION+2][CHUNK_RESOLUTION + 2];
+	sChunkNormalData	dynDataNormalMap[CHUNK_RESOLUTION + 2][CHUNK_RESOLUTION + 2];
 	sChunkTextureData	dynDataTexture[CHUNK_RESOLUTION + 2][CHUNK_RESOLUTION + 2];
 	bool HeightmapChanged;
 	bool TextureChanged;

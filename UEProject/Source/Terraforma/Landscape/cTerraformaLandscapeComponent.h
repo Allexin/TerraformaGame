@@ -37,6 +37,8 @@ protected:
 	UPROPERTY()
 	TArray<UTexture2D*>	m_HeightmapTextures;
 	UPROPERTY()
+	TArray<UTexture2D*>	m_NormalmapTextures;
+	UPROPERTY()
 	TArray<UTexture2D*>	m_ColorTextures;
 
 	bool m_NeedInvalidate;
