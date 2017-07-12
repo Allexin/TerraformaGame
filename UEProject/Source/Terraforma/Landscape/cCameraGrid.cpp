@@ -71,23 +71,6 @@ cCameraGrid::cCameraGrid() {
 	initLODMask();
 }
 
-enum class eBoxSide {
-	MINUS_Z = 0,
-	//PLUS_Z,
-	//MINUS_X,
-	//PLUS_X,
-	//MINUS_Y,
-	//PLUS_Y,	
-	COUNT
-};
-
-struct sPlaneInfo {
-	FVector Origin;
-	FVector Normal;
-	sPlaneInfo() {}
-	sPlaneInfo(FVector origin, FVector normal) :Origin(origin), Normal(normal) {}
-};
-
 const int FAR_PLANE_VECTORS_COUNT = 4;
 
 int getPointDistanceToLine(FIntPoint start, FIntPoint end, FIntPoint p) {
@@ -103,7 +86,7 @@ void SortArrayFromSecond(TArray<FIntPoint>& points, const PREDICATE_CLASS& Predi
 bool cCameraGrid::getFrustumPoints(FVector cameraPos, FRotationMatrix cameraRot, float cameraFOV, float cameraAspect, FVector gridPos, int chunksXCount, int chunksYCount, float maxHeight) {
 	FVector gridSize(chunksXCount*CHUNK_SIZE_CM, chunksYCount*CHUNK_SIZE_CM, maxHeight);
 
-	sPlaneInfo boundBox[eBoxSide::COUNT];
+	sPlaneInfo boundBox[(int)eBoxSide::MINUS_Z+1];
 	boundBox[(int)eBoxSide::MINUS_Z] = sPlaneInfo(gridPos, FVector(0, 0, -1));
 	//boundBox[(int)eBoxSide::PLUS_Z] = sPlaneInfo(gridPos + gridSize, FVector(0, 0, +1));
 	//boundBox[(int)eBoxSide::MINUS_X] = sPlaneInfo(gridPos, FVector(-1, 0, 0));
@@ -132,7 +115,7 @@ bool cCameraGrid::getFrustumPoints(FVector cameraPos, FRotationMatrix cameraRot,
 	for (int vector = 0; vector < FAR_PLANE_VECTORS_COUNT; vector++) {
 		FVector& v = FarPlaneVectors[vector];
 		float vSizeSquared = v.SizeSquared();
-		for (int plane = 0; plane < (int)eBoxSide::COUNT; plane++) {
+		for (int plane = 0; plane < (int)eBoxSide::MINUS_Z; plane++) {
 			sPlaneInfo& p = boundBox[plane];
 
 			bool cameraIsBehindPlane = FVector::PointPlaneDist(cameraPos, p.Origin, p.Normal)<0;

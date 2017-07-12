@@ -1,4 +1,5 @@
 #pragma once
+#include "sTerraformaTemplate.h"
 
 const int CHUNK_RESOLUTION = 64;
 const float CHUNK_TEXTURE_STEP = 1.0f / (CHUNK_RESOLUTION + 2);
@@ -21,6 +22,13 @@ struct sChunkNormalData {
 	uint8 reserved;
 };
 
+struct sTechInfo {
+	bool Changed;
+	sTechInfo() {
+		Changed = false;
+	}
+};
+
 struct sTerraformaGridChunk {
 	uint16 minHeight;
 	uint16 maxHeight;
@@ -29,8 +37,13 @@ struct sTerraformaGridChunk {
 	sChunkHeightData dynDataHeightMap[CHUNK_RESOLUTION+2][CHUNK_RESOLUTION + 2];
 	sChunkNormalData	dynDataNormalMap[CHUNK_RESOLUTION + 2][CHUNK_RESOLUTION + 2];
 	sChunkTextureData	dynDataTexture[CHUNK_RESOLUTION + 2][CHUNK_RESOLUTION + 2];
+	sTechInfo			TechData[CHUNK_RESOLUTION + 2][CHUNK_RESOLUTION + 2];
 	bool HeightmapChanged;
 	bool TextureChanged;
+
+	int ApplyCutTerraforming(int globalX, int globalY, uint16 targetHeight, int dstX, int dstY, int dstWidth, int dstHeight, int srcX, int srcY, const FsTerraformaTemplate& heightmap, uint8 heightmapFactor);
+	int ApplyTerraforming(int globalX, int globalY, int dstX, int dstY, int dstWidth, int dstHeight, int srcX, int srcY, const FsTerraformaTemplate& heightmap, uint8 heightmapFactor, const FsTerraformaTemplate* terraformedColormap, float colorFactor);
+	void ApplyColoring(int dstX, int dstY, int dstWidth, int dstHeight, int srcX, int srcY, const FsTerraformaTemplate& colormap);
 };
 
 class cTerraformaGrid {
@@ -45,11 +58,26 @@ public:
 
 	int width() const { return m_Width; }
 	int height() const { return m_Height; }
-	sTerraformaGridChunk* getData(int x, int y) { return &m_Map[getIndex(x,y)]; }
+	sTerraformaGridChunk* getData(int chunkX, int chunkY) { return &m_Map[getIndex(chunkX, chunkY)]; }
 	sTerraformaGridChunk* getData(int index) { return &m_Map[index]; }
+
+	/*DO NOT USE IT TO ITERATE THROUGH LANDSCAPE, GET CHUNKS INSTEAD*/
+	uint16 getHeightDirect(int x, int y) { 
+		int chunkX = x / CHUNK_RESOLUTION;
+		int chunkY = y / CHUNK_RESOLUTION;
+		return m_Map[getIndex(chunkX, chunkY)].dynDataHeightMap[y % CHUNK_RESOLUTION +1][x % CHUNK_RESOLUTION + 1].height;
+	}
 
 	bool loadFromFile(FString FileName);
 	bool loadFromArray(const TArray<uint8>& TFARawData);
 
+	int ApplyCutTerraforming(int x, int y, uint16 targetHeight, const FsTerraformaTemplate& cutHeightmap, uint8 heightmapFactor);
+	int ApplyTerraforming(int x, int y, const FsTerraformaTemplate& heightmap, uint8 heightmapFactor, const FsTerraformaTemplate* terraformedColormap, float colorFactor);
+	void ApplyColoring(int x, int y, const FsTerraformaTemplate& colormap);
+
+
+
+
+public:
 	static void convertVMPtoTFA(FString Path, FString FileName);
 };

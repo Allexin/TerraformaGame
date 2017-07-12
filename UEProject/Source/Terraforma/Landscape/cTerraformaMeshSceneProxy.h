@@ -86,8 +86,9 @@ struct sTerraformaChunkLOD {
 
 struct sChunkInfo {
 	FMeshBatch Mesh;
-	FMatrix Transform;
+	FMatrix Transform;	
 	sTerraformaGridChunk* Data;
+	FBoxSphereBounds MeshBound;
 
 	UMaterialInstanceDynamic* MaterialInst;
 };

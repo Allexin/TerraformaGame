@@ -2,11 +2,31 @@
 
 #include "Camera/CameraComponent.h"
 #include "Camera/PlayerCameraManager.h"
+#include "cTerraformaGrid.h"
 #include "DrawDebugHelpers.h"
 
 const float CHUNK_SIZE_CM = 1000.f;
+const float TEXEL_SIZE_CM = CHUNK_SIZE_CM / CHUNK_RESOLUTION;
+const float MAX_HEIGHT_CM = 256.f * 25.f;
 const int CONVEX_MIN_BORDER = 2;
 const float CONVEX_BORDER_INCREASE_PER_CHUNK = 0.1;
+
+enum class eBoxSide {
+	MINUS_Z = 0,
+	PLUS_Z,
+	MINUS_X,
+	PLUS_X,
+	MINUS_Y,
+	PLUS_Y,
+	COUNT
+};
+
+struct sPlaneInfo {
+	FVector Origin;
+	FVector Normal;
+	sPlaneInfo() {}
+	sPlaneInfo(FVector origin, FVector normal) :Origin(origin), Normal(normal) {}
+};
 
 enum class eChunkLOD {
 	LOD_0 = 0,

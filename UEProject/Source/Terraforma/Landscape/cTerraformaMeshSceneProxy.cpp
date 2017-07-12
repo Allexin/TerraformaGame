@@ -362,6 +362,7 @@ void FcTerraformaMeshSceneProxy::ReinitChunks() {
 		for (int y = 0; y < m_Height; y++)
 			for (int x = 0; x < m_Width; x++) {
 				m_Chunks[i].Data = m_LandscapeComponent->m_Landscape.getData(x, y);
+				m_Chunks[i].MeshBound = m_LandscapeComponent->m_Bounds[i];
 
 				FMeshBatch& Mesh = m_Chunks[i].Mesh;
 				m_Chunks[i].MaterialInst = m_LandscapeComponent->m_DynMaterialInstances[i];
@@ -386,6 +387,7 @@ void FcTerraformaMeshSceneProxy::ReinitChunks() {
 			for (int x = 0; x < m_Width; x++) {
 				if (VisibilityGrid[i].visible) {
 					m_Chunks[i].Data = m_LandscapeComponent->m_Landscape.getData(x, y);
+					m_Chunks[i].MeshBound = m_LandscapeComponent->m_Bounds[i];
 
 					eChunkLOD lod = VisibilityGrid[i].lod;
 					unsigned char seamVariant = VisibilityGrid[i].seamID;
@@ -428,7 +430,7 @@ void FcTerraformaMeshSceneProxy::DrawStaticElements(FStaticPrimitiveDrawInterfac
 		Mesh.bWireframe = m_LandscapeComponent->Wireframe;
 		m_Chunks[i].MaterialInst = m_LandscapeComponent->m_DynMaterialInstances[i];
 		Mesh.MaterialRenderProxy = m_Chunks[i].MaterialInst->GetRenderProxy(false);
-		Mesh.Elements[0].PrimitiveUniformBuffer = CreatePrimitiveUniformBufferImmediate(chunk.Transform, GetBounds(), GetLocalBounds(), true, UseEditorDepthTest());
+		Mesh.Elements[0].PrimitiveUniformBuffer = CreatePrimitiveUniformBufferImmediate(chunk.Transform, chunk.MeshBound, chunk.MeshBound, true, UseEditorDepthTest());
 		PDI->DrawMesh(Mesh, FLT_MAX);
 	}
 }
