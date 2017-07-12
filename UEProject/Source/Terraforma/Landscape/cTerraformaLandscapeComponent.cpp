@@ -173,7 +173,7 @@ void UcTerraformaLandscapeComponent::TickComponent(float DeltaTime, enum ELevelT
 void UcTerraformaLandscapeComponent::BeginPlay() {
 	Super::BeginPlay();
 	if (TerraformedTexture != nullptr)
-		UcTerraformaUtilsLibrary::GetColorMapTemplateFromTexture(TerraformedTexture, TerraformedTextureTemplate, GEngine);
+		UcTerraformaUtilsLibrary::GetColorMapTemplateFromTexture(TerraformedTexture, TerraformedTextureTemplate);
 
 }
 
@@ -318,7 +318,9 @@ bool UcTerraformaLandscapeComponent::LineIntersection(FVector start, FVector dir
 	return false;
 }
 
-int UcTerraformaLandscapeComponent::ApplyTerraforming(FVector Position, const FsTerraformaTemplate& cutHeightmap, const FsTerraformaTemplate& heightmap, uint8 heightmapFactor, const FsTerraformaTemplate& colormap) {
+int UcTerraformaLandscapeComponent::ApplyTerraforming(FVector Position, const FsTerraformaTemplate& cutHeightmap, const FsTerraformaTemplate& heightmap, uint8 heightmapFactor, const FsTerraformaTemplate& colormap, float ApplyRangeMin, float ApplyRangeMax) {
+	uint16 iApplyRangeMin = (uint16)(FMath::Clamp(ApplyRangeMin,0.f, MAX_HEIGHT_CM) / MAX_HEIGHT_CM * MAX_uint16);
+	uint16 iApplyRangeMax = (uint16)(FMath::Clamp(ApplyRangeMax, 0.f, MAX_HEIGHT_CM) / MAX_HEIGHT_CM * MAX_uint16);
 	bool haveColorMap = colormap.Size > 0 && colormap.Type == ETemplateTypeEnum::TTE_TEXTURE;
 	FsTerraformaTemplate* terraformedTemplate = nullptr;
 	if (!haveColorMap && TerraformedTextureTemplate.Size > 0 && TerraformedTextureTemplate.Type == ETemplateTypeEnum::TTE_TEXTURE)
@@ -326,13 +328,13 @@ int UcTerraformaLandscapeComponent::ApplyTerraforming(FVector Position, const Fs
 	colormap.RawData.Num() > 0 && colormap.Type == ETemplateTypeEnum::TTE_TEXTURE;
 	int TerraformedCounter = 0;
 	if (cutHeightmap.RawData.Num() > 0 && cutHeightmap.Type == ETemplateTypeEnum::TTE_HEIGHTMAP) {
-		TerraformedCounter += m_Landscape.ApplyCutTerraforming(Position.X / TEXEL_SIZE_CM, Position.Y / TEXEL_SIZE_CM, (uint16)(Position.Z * MAX_uint16 / MAX_HEIGHT_CM), cutHeightmap, heightmapFactor);
+		TerraformedCounter += m_Landscape.ApplyCutTerraforming(Position.X / TEXEL_SIZE_CM, Position.Y / TEXEL_SIZE_CM, (uint16)(Position.Z * MAX_uint16 / MAX_HEIGHT_CM), cutHeightmap, heightmapFactor, iApplyRangeMin, iApplyRangeMax);
 	}
 	if (heightmap.RawData.Num() > 0 && heightmap.Type==ETemplateTypeEnum::TTE_HEIGHTMAP) {
-		TerraformedCounter+= m_Landscape.ApplyTerraforming(Position.X / TEXEL_SIZE_CM, Position.Y / TEXEL_SIZE_CM, heightmap, heightmapFactor, terraformedTemplate, TextureChangeSpeed);
+		TerraformedCounter+= m_Landscape.ApplyTerraforming(Position.X / TEXEL_SIZE_CM, Position.Y / TEXEL_SIZE_CM, heightmap, heightmapFactor, terraformedTemplate, TextureChangeSpeed, iApplyRangeMin, iApplyRangeMax);
 	}
 	if (haveColorMap) {
-		m_Landscape.ApplyColoring(Position.X / TEXEL_SIZE_CM, Position.Y / TEXEL_SIZE_CM, colormap);
+		m_Landscape.ApplyColoring(Position.X / TEXEL_SIZE_CM, Position.Y / TEXEL_SIZE_CM, colormap, iApplyRangeMin, iApplyRangeMax);
 	}
 	m_Terraformed = true;
 	return TerraformedCounter;

@@ -17,8 +17,9 @@ class TERRAFORMA_API UcTerraformaUtilsLibrary : public UBlueprintFunctionLibrary
 
 public:	
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Utils")
-		static bool GetHeightMapTemplateFromTexture(UTexture2D* texture, FsTerraformaTemplate& heightmap, UEngine* GEngineErrorHandler);
+		static bool GetHeightMapTemplateFromTexture(UTexture2D* texture, FsTerraformaTemplate& heightmap, uint8 clampMin = 0, uint8 clampMax = 255);
+	
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Utils")
-		static bool GetColorMapTemplateFromTexture(UTexture2D* texture, FsTerraformaTemplate& colormap, UEngine* GEngineErrorHandler);
+		static bool GetColorMapTemplateFromTexture(UTexture2D* texture, FsTerraformaTemplate& colormap);
 	
 };

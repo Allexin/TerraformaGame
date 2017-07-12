@@ -72,7 +72,7 @@ public:
 	bool LineIntersection(FVector start, FVector direction, FVector& intersectionLocation);
 
 	UFUNCTION(BlueprintCallable, Category = "Landscape")
-	int ApplyTerraforming(FVector Position, const FsTerraformaTemplate& cutHeightmap, const FsTerraformaTemplate& heightmap, uint8 heightmapFactor, const FsTerraformaTemplate& colormap);
+	int ApplyTerraforming(FVector Position, const FsTerraformaTemplate& cutHeightmap, const FsTerraformaTemplate& heightmap, uint8 heightmapFactor, const FsTerraformaTemplate& colormap, float ApplyRangeMin = 0, float ApplyRangeMax = 6400.f /*MAX_HEIGHT_CM*/);
 
 	
 protected:
