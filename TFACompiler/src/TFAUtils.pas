@@ -30,6 +30,7 @@ type
 
 
     Function GetChunkLayerCoord(chunkX, chunkY, x, y: integer; var outCoord:TPoint):boolean;
+    Function GetChunkTexLayerCoord(chunkX, chunkY, x, y: integer; var outCoord:TPoint):boolean;
     Function GetNormal(chunkX, chunkY, x, y: integer): TVector3f;
   public
     LastError:string;
@@ -105,7 +106,7 @@ end;
 const
   CHUNK_RESOLUTION:integer = 64;
 const
-  TFA_FILE_VERSION:integer = 2;
+  TFA_FILE_VERSION:integer = 4;
 
 constructor TTFAFile.Create;
 begin
@@ -283,6 +284,13 @@ begin
   Result:=(outCoord.X>=0) and (outCoord.X<FHeightMapWidth) and (outCoord.Y>=0) and (outCoord.Y<FHeightMapHeight);
 end;
 
+function TTFAFile.GetChunkTexLayerCoord(chunkX, chunkY, x, y: integer; var outCoord:TPoint):boolean ;
+begin
+  outCoord.X:=chunkX*CHUNK_RESOLUTION*2 + x;
+  outCoord.Y:=chunkY*CHUNK_RESOLUTION*2 + y;
+  Result:=(outCoord.X>=0) and (outCoord.X<FTextureWidth) and (outCoord.Y>=0) and (outCoord.Y<FTextureHeight);
+end;
+
 Function Normal(const v1,v2,v3:TVector3f):Tvector3f;
 begin
   Result := ((v3 - v1)*(v2 - v1));
@@ -361,8 +369,8 @@ begin
     Exit;
   end;
 
-  if (FTextureWidth<>FHeightMapWidth) or (FTextureHeight<>FHeightMapHeight) then begin
-    LastError:='texture and heightmap size not equal';
+  if (FTextureWidth<>FHeightMapWidth*2) or (FTextureHeight<>FHeightMapHeight*2) then begin
+    LastError:='texture must have x2 heightmap size';
     Exit;
   end;
 
@@ -378,7 +386,7 @@ begin
         for ix := -1  to CHUNK_RESOLUTION  do begin
           if (GetChunkLayerCoord(x,y, ix,iy, coord)) then begin
             It:=FHeightmap;
-            inc(It,coord.Y*FHeightMapHeight + coord.X);
+            inc(It,coord.Y*FHeightMapWidth + coord.X);
             height := It^;
           end
           else
@@ -387,11 +395,11 @@ begin
         end;
   for y := 0 to chunksYCount-1 do
     for x := 0 to chunksYCount-1 do
-      for iy := -1  to CHUNK_RESOLUTION  do
-        for ix := -1  to CHUNK_RESOLUTION  do begin
-          if (GetChunkLayerCoord(x,y, ix,iy, coord)) then begin
+      for iy := -1  to CHUNK_RESOLUTION*2  do
+        for ix := -1  to CHUNK_RESOLUTION*2  do begin
+          if (GetChunkTexLayerCoord(x,y, ix,iy, coord)) then begin
             TIt:=PByte(FTexture);
-            inc(TIt,coord.Y*FHeightMapHeight*4 + coord.X*4);
+            inc(TIt,coord.Y*FTextureWidth*4 + coord.X*4);
             b:=TIt^;inc(TIt);
             g:=TIt^;inc(TIt);
             r:=TIt^;inc(TIt);
@@ -416,7 +424,7 @@ begin
         for ix := -1  to CHUNK_RESOLUTION  do begin
           if (GetChunkLayerCoord(x,y, ix,iy, coord)) then begin
             NIt:=PByte(FNormalmap);
-            inc(NIt,coord.Y*FHeightMapHeight*4 + coord.X*4);
+            inc(NIt,coord.Y*FHeightMapWidth*4 + coord.X*4);
             r:=NIt^;inc(NIt);
             g:=NIt^;inc(NIt);
             b:=NIt^;inc(NIt);

@@ -1,8 +1,10 @@
 #pragma once
 #include "sTerraformaTemplate.h"
 
-const int CHUNK_RESOLUTION = 64;
-const float CHUNK_TEXTURE_STEP = 1.0f / (CHUNK_RESOLUTION + 2);
+const int CHUNK_H_RESOLUTION = 64;
+const int CHUNK_T_RESOLUTION = 128;
+const float CHUNK_H_STEP = 1.0f / (CHUNK_H_RESOLUTION + 2);
+const float CHUNK_T_STEP = 1.0f / (CHUNK_T_RESOLUTION + 2);
 
 struct sChunkHeightData {
 	uint16 height;
@@ -34,10 +36,10 @@ struct sTerraformaGridChunk {
 	uint16 maxHeight;
 	int x;
 	int y;
-	sChunkHeightData dynDataHeightMap[CHUNK_RESOLUTION+2][CHUNK_RESOLUTION + 2];
-	sChunkNormalData	dynDataNormalMap[CHUNK_RESOLUTION + 2][CHUNK_RESOLUTION + 2];
-	sChunkTextureData	dynDataTexture[CHUNK_RESOLUTION + 2][CHUNK_RESOLUTION + 2];
-	sTechInfo			TechData[CHUNK_RESOLUTION + 2][CHUNK_RESOLUTION + 2];
+	sChunkHeightData dynDataHeightMap[CHUNK_H_RESOLUTION+2][CHUNK_H_RESOLUTION + 2];
+	sChunkNormalData	dynDataNormalMap[CHUNK_H_RESOLUTION + 2][CHUNK_H_RESOLUTION + 2];
+	sChunkTextureData	dynDataTexture[CHUNK_T_RESOLUTION + 2][CHUNK_T_RESOLUTION + 2];
+	sTechInfo			TechData[CHUNK_H_RESOLUTION + 2][CHUNK_H_RESOLUTION + 2];
 	bool HeightmapChanged;
 	bool TextureChanged;
 
@@ -63,9 +65,9 @@ public:
 
 	/*DO NOT USE IT TO ITERATE THROUGH LANDSCAPE, GET CHUNKS INSTEAD*/
 	uint16 getHeightDirect(int x, int y) { 
-		int chunkX = x / CHUNK_RESOLUTION;
-		int chunkY = y / CHUNK_RESOLUTION;
-		return m_Map[getIndex(chunkX, chunkY)].dynDataHeightMap[y % CHUNK_RESOLUTION +1][x % CHUNK_RESOLUTION + 1].height;
+		int chunkX = x / CHUNK_H_RESOLUTION;
+		int chunkY = y / CHUNK_H_RESOLUTION;
+		return m_Map[getIndex(chunkX, chunkY)].dynDataHeightMap[y % CHUNK_H_RESOLUTION +1][x % CHUNK_H_RESOLUTION + 1].height;
 	}
 
 	bool loadFromFile(FString FileName);
@@ -79,5 +81,5 @@ public:
 
 
 public:
-	static void convertVMPtoTFA(FString Path, FString FileName);
+	//static void convertVMPtoTFA(FString Path, FString FileName);
 };

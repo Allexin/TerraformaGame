@@ -5,19 +5,38 @@
 #include "cTerraformaGrid.h"
 #include "cCameraGrid.h"
 
+struct FTerraformaMeshVertex
+{
+	FTerraformaMeshVertex() {}
+
+	FVector Position;
+	FVector2D TextureCoordinate;
+	FVector2D TextureCoordinate2;
+	FPackedNormal TangentX;
+	FPackedNormal TangentZ;
+
+	void SetTangents(const FVector& InTangentX, const FVector& InTangentY, const FVector& InTangentZ)
+	{
+		TangentX = InTangentX;
+		TangentZ = InTangentZ;
+		// store determinant of basis in w component of normal vector
+		TangentZ.Vector.W = GetBasisDeterminantSign(InTangentX, InTangentY, InTangentZ) < 0.0f ? 0 : 255;
+	}	
+}; 
+
 class FTerraformaMeshVertexBuffer : public FVertexBuffer
 {
 public:
-	TArray<FDynamicMeshVertex> Vertices;
+	TArray<FTerraformaMeshVertex> Vertices;
 
 	virtual void InitRHI()
 	{
 		FRHIResourceCreateInfo CreateInfo;
-		VertexBufferRHI = RHICreateVertexBuffer(Vertices.Num() * sizeof(FDynamicMeshVertex), BUF_Static, CreateInfo);
+		VertexBufferRHI = RHICreateVertexBuffer(Vertices.Num() * sizeof(FTerraformaMeshVertex), BUF_Static, CreateInfo);
 
 		// Copy the vertex data into the vertex buffer.
-		void* VertexBufferData = RHILockVertexBuffer(VertexBufferRHI, 0, Vertices.Num() * sizeof(FDynamicMeshVertex), RLM_WriteOnly);
-		FMemory::Memcpy(VertexBufferData, Vertices.GetData(), Vertices.Num() * sizeof(FDynamicMeshVertex));
+		void* VertexBufferData = RHILockVertexBuffer(VertexBufferRHI, 0, Vertices.Num() * sizeof(FTerraformaMeshVertex), RLM_WriteOnly);
+		FMemory::Memcpy(VertexBufferData, Vertices.GetData(), Vertices.Num() * sizeof(FTerraformaMeshVertex));
 		RHIUnlockVertexBuffer(VertexBufferRHI);
 
 	}
@@ -61,13 +80,14 @@ public:
 			const FTerraformaMeshVertexBuffer*, VertexBuffer, VertexBuffer,
 			{
 				// Initialize the vertex factory's stream components.
-				DataType NewData;
-		NewData.PositionComponent = STRUCTMEMBER_VERTEXSTREAMCOMPONENT(VertexBuffer,FDynamicMeshVertex,Position,VET_Float3);
+				FDataType NewData;
+		NewData.PositionComponent = STRUCTMEMBER_VERTEXSTREAMCOMPONENT(VertexBuffer, FTerraformaMeshVertex,Position,VET_Float3);
 		NewData.TextureCoordinates.Add(
-			FVertexStreamComponent(VertexBuffer,STRUCT_OFFSET(FDynamicMeshVertex,TextureCoordinate),sizeof(FDynamicMeshVertex),VET_Float2));
-		NewData.TangentBasisComponents[0] = STRUCTMEMBER_VERTEXSTREAMCOMPONENT(VertexBuffer,FDynamicMeshVertex,TangentX,VET_PackedNormal);
-		NewData.TangentBasisComponents[1] = STRUCTMEMBER_VERTEXSTREAMCOMPONENT(VertexBuffer,FDynamicMeshVertex,TangentZ,VET_PackedNormal);
-		NewData.ColorComponent = STRUCTMEMBER_VERTEXSTREAMCOMPONENT(VertexBuffer, FDynamicMeshVertex, Color, VET_Color);
+			FVertexStreamComponent(VertexBuffer,STRUCT_OFFSET(FTerraformaMeshVertex,TextureCoordinate),sizeof(FTerraformaMeshVertex),VET_Float2));
+		NewData.TextureCoordinates.Add(
+			FVertexStreamComponent(VertexBuffer, STRUCT_OFFSET(FTerraformaMeshVertex, TextureCoordinate2), sizeof(FTerraformaMeshVertex), VET_Float2));
+		NewData.TangentBasisComponents[0] = STRUCTMEMBER_VERTEXSTREAMCOMPONENT(VertexBuffer, FTerraformaMeshVertex, TangentX, VET_PackedNormal);
+		NewData.TangentBasisComponents[1] = STRUCTMEMBER_VERTEXSTREAMCOMPONENT(VertexBuffer, FTerraformaMeshVertex, TangentZ, VET_PackedNormal);
 		VertexFactory->SetData(NewData);
 			});
 	}

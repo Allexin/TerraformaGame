@@ -2,11 +2,11 @@
 #include "cTerraformaLandscapeComponent.h"
 
 inline int getVertexIndex(int x, int y, int step = 1) {
-	return x*step + y*step*(CHUNK_RESOLUTION + 1);
+	return x*step + y*step*(CHUNK_H_RESOLUTION + 1);
 }
 
 void GenerateChunk(int step, sTerraformaChunkLOD& chunk, FTerraformaMeshIndexBuffer& indexBuffer) {
-	int Resolution = CHUNK_RESOLUTION / step;
+	int Resolution = CHUNK_H_RESOLUTION / step;
 
 	chunk.variants[0].start = indexBuffer.Indices.Num();
 	chunk.variants[0].trianglesCount = 0;
@@ -304,11 +304,12 @@ FcTerraformaMeshSceneProxy::FcTerraformaMeshSceneProxy(UcTerraformaLandscapeComp
 	const FVector TangentY(0, 1, 0);
 	const FVector TangentZ(0, 0, 1);
 
-	for (int y = 0; y <= CHUNK_RESOLUTION; y++)
-		for (int x = 0; x <= CHUNK_RESOLUTION; x++) {
-			FDynamicMeshVertex vertex;
-			vertex.Position = FVector(CHUNK_SIZE_CM* x / (float)(CHUNK_RESOLUTION), CHUNK_SIZE_CM* y / (float)(CHUNK_RESOLUTION), 0);
-			vertex.TextureCoordinate = FVector2D(x*CHUNK_TEXTURE_STEP + CHUNK_TEXTURE_STEP*1.5, y*CHUNK_TEXTURE_STEP + CHUNK_TEXTURE_STEP*1.5); //shift borders and set uv on texel center
+	for (int y = 0; y <= CHUNK_H_RESOLUTION; y++)
+		for (int x = 0; x <= CHUNK_H_RESOLUTION; x++) {
+			FTerraformaMeshVertex vertex;
+			vertex.Position = FVector(CHUNK_SIZE_CM* x / (float)(CHUNK_H_RESOLUTION), CHUNK_SIZE_CM* y / (float)(CHUNK_H_RESOLUTION), 0);
+			vertex.TextureCoordinate = FVector2D(x*CHUNK_H_STEP + CHUNK_H_STEP*1.5, y*CHUNK_H_STEP + CHUNK_H_STEP*1.5); //shift borders and set uv on texel center
+			vertex.TextureCoordinate2 = FVector2D(x*CHUNK_T_STEP*2 + CHUNK_T_STEP*1.5, y*CHUNK_T_STEP*2 + CHUNK_T_STEP*1.5); //shift borders and set uv on texel center
 			vertex.SetTangents(TangentX, TangentY, TangentZ);
 			VertexBuffer.Vertices.Add(vertex);
 		}

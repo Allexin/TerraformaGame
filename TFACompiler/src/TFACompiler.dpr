@@ -76,4 +76,5 @@ end;
 
 begin
   CompileMapsToTFA();
+  readln;
 end.

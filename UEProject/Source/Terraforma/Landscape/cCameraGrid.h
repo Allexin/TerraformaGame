@@ -6,7 +6,7 @@
 #include "DrawDebugHelpers.h"
 
 const float CHUNK_SIZE_CM = 1000.f;
-const float TEXEL_SIZE_CM = CHUNK_SIZE_CM / CHUNK_RESOLUTION;
+const float TEXEL_SIZE_CM = CHUNK_SIZE_CM / CHUNK_H_RESOLUTION;
 const float MAX_HEIGHT_CM = 256.f * 25.f;// 6400
 const int CONVEX_MIN_BORDER = 2;
 const float CONVEX_BORDER_INCREASE_PER_CHUNK = 0.1;
