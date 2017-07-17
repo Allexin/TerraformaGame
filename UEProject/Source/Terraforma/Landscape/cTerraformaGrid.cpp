@@ -1,13 +1,108 @@
 #include "cTerraformaGrid.h"
+#include "cCameraGrid.h"
 #include "MemoryReader.h"
 
-void packNormal(float x, float y, float z, sChunkNormalData& outNormal) {
-	outNormal.x = 128 + (int)(x * 128);
-	outNormal.y = 128 + (int)(y * 128);
-	outNormal.z = 128 + (int)(z * 128);
+sChunkNormalData packNormal(const FVector& normal) {
+	sChunkNormalData n;
+	n.x = (uint8)((normal.X + 1) * 127);
+	n.y = (uint8)((normal.Y + 1) * 127);
+	n.z = (uint8)((normal.Z + 1) * 127);
+	return n;
 }
 
-int sTerraformaGridChunk::ApplyCutTerraforming(int globalX, int globalY, uint16 targetHeight, int dstX, int dstY, int dstWidth, int dstHeight, int srcX, int srcY, const FsTerraformaTemplate& heightmap, uint8 heightmapFactor, uint16 ApplyRangeMin, uint16 ApplyRangeMax) {
+
+sTerraformaGridChunk::sHeightInfo sTerraformaGridChunk::GetHeight(int ix, int iy) {
+	sTerraformaGridChunk::sHeightInfo h;
+	h.available = (ix >= 0) && (ix < CHUNK_H_RESOLUTION + 2) && (iy >= 0) && (iy < CHUNK_H_RESOLUTION + 2);
+
+	if (h.available)
+		h.height = dynDataHeightMap[iy][ix].height;
+	return h;
+}
+
+
+FVector Normal(FVector& v1, FVector& v2, FVector& v3) {
+	FVector n((v3 - v1)^(v2 - v1));
+	n.Normalize();
+	return n;
+}
+
+FVector sTerraformaGridChunk::GetNormal(int ix, int iy, uint16 centerHeight) {
+	sTerraformaGridChunk::sHeightInfo minusX;
+	sTerraformaGridChunk::sHeightInfo minusY;
+	sTerraformaGridChunk::sHeightInfo plusX;
+	sTerraformaGridChunk::sHeightInfo plusY;
+	FVector center(0, 0, (float)centerHeight * MAX_HEIGHT_CM / MAX_uint16 );
+	minusX = GetHeight(ix - 1, iy);
+		minusX.vertex = FVector(-TEXEL_SIZE_CM, 0, (float)minusX.height* MAX_HEIGHT_CM / MAX_uint16 );
+	minusY = GetHeight(ix, iy - 1);
+		minusY.vertex = FVector(0, -TEXEL_SIZE_CM, (float)minusY.height* MAX_HEIGHT_CM / MAX_uint16 );
+	plusX = GetHeight(ix + 1, iy);
+		plusX.vertex = FVector(+TEXEL_SIZE_CM, 0, (float)plusX.height* MAX_HEIGHT_CM / MAX_uint16 );
+	plusY = GetHeight(ix, iy + 1);
+		plusY.vertex = FVector(0, +TEXEL_SIZE_CM, (float)plusY.height* MAX_HEIGHT_CM / MAX_uint16 );
+	FVector n(0, 0, 1);
+
+	if ((minusX.available) && (minusY.available))
+		n = n + Normal(center, minusY.vertex, minusX.vertex);
+	if ((plusX.available) && (minusY.available))
+		n = n + Normal(center, plusX.vertex, minusY.vertex);
+	if ((plusX.available) && (plusY.available))
+		n = n + Normal(center, plusY.vertex, plusX.vertex);
+	if ((minusX.available) && (plusY.available))
+		n = n + Normal(center, minusX.vertex, plusY.vertex);
+	n.Normalize();
+	return n;
+}
+
+void sTerraformaGridChunk::Recalc(const FsTerraformaTemplate* terraformedColormap, float colorFactor) {
+	maxHeight = 0;
+	minHeight = MAX_uint16;
+	int globalPosX = chunkX*CHUNK_T_RESOLUTION - 1;
+	int globalPosY = chunkY*CHUNK_T_RESOLUTION - 1;
+	for (int iy = 0; iy<CHUNK_H_RESOLUTION + 2; iy++)
+		for (int ix = 0; ix < CHUNK_H_RESOLUTION + 2; ix++) {			
+			uint16 height = dynDataHeightMap[iy][ix].height;
+			if (height > maxHeight)
+				maxHeight = height;
+			if (height < minHeight)
+				minHeight = height;
+
+			if (TechData[iy][ix].ChangedValue > 0) {
+				dynDataNormalMap[iy][ix] = packNormal(GetNormal(ix, iy, height));
+
+				if (terraformedColormap != nullptr) {
+					float lerpFactor = FMath::Min(FMath::Abs(TechData[iy][ix].ChangedValue*colorFactor), 1.f);
+
+					for (int ty = 0; ty<2; ty++)
+						for (int tx = 0; tx < 2; tx++) {
+							int texX = ix * 2 + tx;
+							int texY = iy * 2 + ty;
+							if (texX < CHUNK_T_RESOLUTION + 2 && texY < CHUNK_T_RESOLUTION + 2) {
+								int u = ((globalPosX + texX)) % terraformedColormap->Size;
+								int v = ((globalPosY + texY)) % terraformedColormap->Size;
+								sChunkTextureData* newColor = (sChunkTextureData*)(&(terraformedColormap->RawData.GetData()[terraformedColormap->getIndex(u, v)]));
+
+
+								sChunkTextureData* dstColor = &dynDataTexture[iy * 2 + ty][ix * 2 + tx];
+								dstColor->red = FMath::Lerp(dstColor->red, newColor->red, lerpFactor);
+								dstColor->green = FMath::Lerp(dstColor->green, newColor->green, lerpFactor);
+								dstColor->blue = FMath::Lerp(dstColor->blue, newColor->blue, lerpFactor);
+								dstColor->reserved = FMath::Lerp(dstColor->reserved, (uint8)0, lerpFactor);
+
+								dstColor = newColor;
+							}
+						}
+				}
+				TechData[iy][ix].ChangedValue = 0;
+			}
+		}
+
+	if (terraformedColormap != nullptr)
+		TextureChanged = true;
+}
+
+int sTerraformaGridChunk::ApplyCutTerraforming(uint16 targetHeight, int dstX, int dstY, int dstWidth, int dstHeight, int srcX, int srcY, const FsTerraformaTemplate& heightmap, uint8 heightmapFactor, uint16 ApplyRangeMin, uint16 ApplyRangeMax) {
 	int terraformingCounter = 0;
 	for (int y = 0; y < dstHeight; y++) {
 		sChunkHeightData* dstHeightmap = &dynDataHeightMap[y + dstY][dstX];
@@ -16,8 +111,7 @@ int sTerraformaGridChunk::ApplyCutTerraforming(int globalX, int globalY, uint16 
 		for (int x = 0; x < dstWidth; x++) {
 			if (dstHeightmap[x].height >= ApplyRangeMin && dstHeightmap[x].height <= ApplyRangeMax) {
 				int dataChange = (srcData[x] - 127)*heightmapFactor;
-				if (dataChange < 0) {
-					dstTech[x].Changed = true;
+				if (dataChange < 0) {					
 					int newHeight = targetHeight + dataChange;
 					if (newHeight < 0)
 						newHeight = 0;
@@ -27,6 +121,7 @@ int sTerraformaGridChunk::ApplyCutTerraforming(int globalX, int globalY, uint16 
 					if (diff > 0) {
 						dstHeightmap[x].height = newHeight;
 						terraformingCounter += diff;
+						dstTech[x].ChangedValue = diff;
 					};
 				}
 			}
@@ -38,15 +133,14 @@ int sTerraformaGridChunk::ApplyCutTerraforming(int globalX, int globalY, uint16 
 }
 
 
-int sTerraformaGridChunk::ApplyTerraforming(int globalX, int globalY, int dstX, int dstY, int dstWidth, int dstHeight, int srcX, int srcY, const FsTerraformaTemplate& heightmap, uint8 heightmapFactor, const FsTerraformaTemplate* terraformedColormap, float colorFactor, uint16 ApplyRangeMin, uint16 ApplyRangeMax) {
+int sTerraformaGridChunk::ApplyTerraforming(int dstX, int dstY, int dstWidth, int dstHeight, int srcX, int srcY, const FsTerraformaTemplate& heightmap, uint8 heightmapFactor, uint16 ApplyRangeMin, uint16 ApplyRangeMax) {
 	int terraformingCounter = 0;
 	for (int y = 0; y < dstHeight; y++) {
 		sChunkHeightData* dstHeightmap = &dynDataHeightMap[y+dstY][dstX];
 		sTechInfo* dstTech = &TechData[y+dstY][dstX];
 		uint8* srcData = (uint8*)heightmap.RawData.GetData() + (srcY+y)*heightmap.Size + srcX;
 		for (int x = 0; x < dstWidth; x++) {
-			if (dstHeightmap[x].height >= ApplyRangeMin && dstHeightmap[x].height <= ApplyRangeMax) {
-				dstTech[x].Changed = true;
+			if (dstHeightmap[x].height >= ApplyRangeMin && dstHeightmap[x].height <= ApplyRangeMax) {				
 				int dataChange = (srcData[x] - 127)*heightmapFactor;
 				/*if (x+srcX == 10 || y+srcY-dstY == 10)
 					dataChange = 15;
@@ -64,41 +158,24 @@ int sTerraformaGridChunk::ApplyTerraforming(int globalX, int globalY, int dstX, 
 					}
 					else
 						dstHeightmap[x].height = newHeight;
-				int ix = x*2 + dstX*2;
-				int iy = y*2 + dstY*2;
-
-				if (ix > 0 && ix < CHUNK_T_RESOLUTION + 1 && iy > 0 && iy < CHUNK_T_RESOLUTION + 1)
-					terraformingCounter += dataChange;
-				if (terraformedColormap != nullptr) {
-					float lerpFactor = FMath::Min(FMath::Abs(dataChange*colorFactor), 1.f);
-					int u = (globalX + x) % terraformedColormap->Size;
-					int v = (globalY + y) % terraformedColormap->Size;
-					sChunkTextureData* newColor = (sChunkTextureData*)(&(terraformedColormap->RawData.GetData()[terraformedColormap->getIndex(u, v)]));
-
-
-					for (int ty = 0; ty<2; ty++)
-						for (int tx = 0; tx < 2; tx++) {
-							sChunkTextureData* dstColor = &dynDataTexture[iy+ty][ix+tx];
-							dstColor->red = FMath::Lerp(dstColor->red, newColor->red, lerpFactor);
-							dstColor->green = FMath::Lerp(dstColor->green, newColor->green, lerpFactor);
-							dstColor->blue = FMath::Lerp(dstColor->blue, newColor->blue, lerpFactor);
-							dstColor->reserved = FMath::Lerp(dstColor->reserved, (uint8)0, lerpFactor);
-						}					
-				}
+				int ix = x + dstX;
+				int iy = y + dstY;
+				if (ix > 0 && ix < CHUNK_H_RESOLUTION + 1 && iy > 0 && iy < CHUNK_H_RESOLUTION + 1)
+					terraformingCounter += dataChange;	
+				if (dstTech[x].ChangedValue < MAX_int16)
+					dstTech[x].ChangedValue += FMath::Abs(dataChange);
 			}
 		}
 	}
 		
-
-	if (terraformedColormap != nullptr) {
-		TextureChanged = true;
-	}
 	HeightmapChanged = true;
 	return terraformingCounter;
 }
 
-void sTerraformaGridChunk::ApplyColoring(int dstX, int dstY, int dstWidth, int dstHeight, int srcX, int srcY, const FsTerraformaTemplate& colormap, uint16 ApplyRangeMin, uint16 ApplyRangeMax)
+void sTerraformaGridChunk::ApplyColoring(int dstX, int dstY, int dstWidth, int dstHeight, int srcX, int srcY, const FsTerraformaTemplate& colormap, const FsTerraformaTemplate* terraformedColormap, float colorFactor, uint16 ApplyRangeMin, uint16 ApplyRangeMax)
 {
+	if (HeightmapChanged)
+		Recalc(terraformedColormap, colorFactor);
 	for (int y = 0; y < dstHeight; y++) {
 		sChunkHeightData* dstHeightmap = &dynDataHeightMap[y/2 + dstY/2][dstX/2];
 		sChunkTextureData* dstColormap = &dynDataTexture[y + dstY][dstX];
@@ -167,8 +244,8 @@ bool cTerraformaGrid::loadFromArray(const TArray<uint8>& TFARawData) {
 	int i = 0;
 	for (int y = 0; y<m_Height; y++)
 		for (int x = 0; x < m_Width; x++) {
-			m_Map[i].x = x;
-			m_Map[i].y = y;
+			m_Map[i].chunkX = x;
+			m_Map[i].chunkY = y;
 			m_Map[i].minHeight = 0;
 			m_Map[i].maxHeight = 0;
 			Reader.Serialize(m_Map[i].dynDataHeightMap, sizeof(sChunkHeightData)*(CHUNK_H_RESOLUTION + 2)*(CHUNK_H_RESOLUTION + 2));
@@ -251,8 +328,8 @@ int cTerraformaGrid::ApplyCutTerraforming(int x, int y, uint16 targetHeight, con
 			if (placeYB > endY)
 				placeYB = endY;
 
-			terraformingCounter += chunk.ApplyCutTerraforming(placeX, placeY, targetHeight,
-				placeX - chunkLeft, placeY - chunkTop, placeXR - placeX + 1, placeYB - placeY + 1,
+			terraformingCounter += chunk.ApplyCutTerraforming(targetHeight,
+				placeX - chunkLeft, placeY - chunkTop, placeXR - placeX + 1   -1, placeYB - placeY + 1   -1,
 				placeX - startX, placeY - startY, cutHeightmap, heightmapFactor,
 				ApplyRangeMin,ApplyRangeMax);
 		}
@@ -261,7 +338,7 @@ int cTerraformaGrid::ApplyCutTerraforming(int x, int y, uint16 targetHeight, con
 	return terraformingCounter;
 }
 
-int cTerraformaGrid::ApplyTerraforming(int x, int y, const FsTerraformaTemplate& heightmap, uint8 heightmapFactor, const FsTerraformaTemplate* terraformedColormap, float colorFactor, uint16 ApplyRangeMin, uint16 ApplyRangeMax) {
+int cTerraformaGrid::ApplyTerraforming(int x, int y, const FsTerraformaTemplate& heightmap, uint8 heightmapFactor, uint16 ApplyRangeMin, uint16 ApplyRangeMax) {
 	int terraformingCounter = 0;
 
 	int startX = x - heightmap.Size / 2;
@@ -297,10 +374,8 @@ int cTerraformaGrid::ApplyTerraforming(int x, int y, const FsTerraformaTemplate&
 			if (placeYB > endY)
 				placeYB = endY;
 
-			terraformingCounter += chunk.ApplyTerraforming(placeX, placeY, 
-															placeX-chunkLeft,placeY-chunkTop,placeXR-placeX+1,placeYB-placeY+1,
+			terraformingCounter += chunk.ApplyTerraforming( placeX-chunkLeft,placeY-chunkTop,placeXR-placeX+1  -1,placeYB-placeY+1  -1,
 															placeX-startX,placeY-startY,heightmap, heightmapFactor, 
-				terraformedColormap, colorFactor,
 				ApplyRangeMin, ApplyRangeMax);
 		}
 	}
@@ -308,7 +383,7 @@ int cTerraformaGrid::ApplyTerraforming(int x, int y, const FsTerraformaTemplate&
 	return terraformingCounter;
 }
 
-void cTerraformaGrid::ApplyColoring(int x, int y, const FsTerraformaTemplate& colormap, uint16 ApplyRangeMin, uint16 ApplyRangeMax) {
+void cTerraformaGrid::ApplyColoring(int x, int y, const FsTerraformaTemplate& colormap, const FsTerraformaTemplate* terraformedColormap, float colorFactor, uint16 ApplyRangeMin, uint16 ApplyRangeMax) {
 	int startX = x*2 - colormap.Size / 2;
 	int startY = y*2 - colormap.Size / 2;
 	int endX = startX + colormap.Size - 1;
@@ -342,7 +417,8 @@ void cTerraformaGrid::ApplyColoring(int x, int y, const FsTerraformaTemplate& co
 			if (placeYB > endY)
 				placeYB = endY;
 
-			chunk.ApplyColoring(placeX - chunkLeft, placeY - chunkTop, placeXR - placeX + 1, placeYB - placeY + 1, placeX - startX, placeY - startY, colormap,
+			chunk.ApplyColoring(placeX - chunkLeft, placeY - chunkTop, placeXR - placeX + 1    -1, placeYB - placeY + 1    -1, placeX - startX, placeY - startY, colormap,
+				terraformedColormap,colorFactor,
 				ApplyRangeMin, ApplyRangeMax);
 		}
 	}

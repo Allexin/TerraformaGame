@@ -74,7 +74,7 @@ void UcTerraformaLandscapeComponent::ReinitMaterials() {
 		m_ColorTextures[i]->UpdateResource();
 		chunk->TextureChanged = false;
 
-		m_Bounds[i] = FBoxSphereBounds(FBox(FVector(chunk->x*CHUNK_SIZE_CM, chunk->y*CHUNK_SIZE_CM,0), FVector((chunk->x+1)*CHUNK_SIZE_CM, (chunk->y + 1)*CHUNK_SIZE_CM, 256*25)));
+		m_Bounds[i] = FBoxSphereBounds(FBox(FVector(chunk->chunkX*CHUNK_SIZE_CM, chunk->chunkY*CHUNK_SIZE_CM,0), FVector((chunk->chunkX+1)*CHUNK_SIZE_CM, (chunk->chunkY + 1)*CHUNK_SIZE_CM, 256*25)));
 	}
 
 	MaterialsReadyCount = width*height;
@@ -128,6 +128,10 @@ void UcTerraformaLandscapeComponent::TickComponent(float DeltaTime, enum ELevelT
 		m_Terraformed = false;
 		m_ApplyTerraformingCounter = 0;
 
+		FsTerraformaTemplate* terraformedTemplate = nullptr;
+		if (TerraformedTextureTemplate.Size > 0 && TerraformedTextureTemplate.Type == ETemplateTypeEnum::TTE_TEXTURE)
+			terraformedTemplate = &TerraformedTextureTemplate;
+
 		if (m_HeightmapTextures.Num() == m_Landscape.width()*m_Landscape.height() && m_ColorTextures.Num() == m_Landscape.width()*m_Landscape.height()) {
 			int i = 0;
 			for (int y = 0; y < m_Landscape.height(); y++)
@@ -137,6 +141,7 @@ void UcTerraformaLandscapeComponent::TickComponent(float DeltaTime, enum ELevelT
 						chunk->HeightmapChanged = false;
 						//FUpdateTextureRegion2D region(0, 0, 0, 0, CHUNK_RESOLUTION + 2, CHUNK_RESOLUTION + 2);
 						//m_HeightmapTextures[i]->UpdateTextureRegions(1, 1, &region, 0, 16, (uint8*)chunk->dynDataHeightMap);
+						chunk->Recalc(terraformedTemplate, TextureChangeSpeed);
 
 						FTexture2DMipMap& MipH = m_HeightmapTextures[i]->PlatformData->Mips[0];
 						void* DataH = MipH.BulkData.Lock(LOCK_READ_WRITE);
@@ -331,10 +336,10 @@ int UcTerraformaLandscapeComponent::ApplyTerraforming(FVector Position, const Fs
 		TerraformedCounter += m_Landscape.ApplyCutTerraforming(Position.X / TEXEL_SIZE_CM, Position.Y / TEXEL_SIZE_CM, (uint16)(Position.Z * MAX_uint16 / MAX_HEIGHT_CM), cutHeightmap, heightmapFactor, iApplyRangeMin, iApplyRangeMax);
 	}
 	if (heightmap.RawData.Num() > 0 && heightmap.Type==ETemplateTypeEnum::TTE_HEIGHTMAP) {
-		TerraformedCounter+= m_Landscape.ApplyTerraforming(Position.X / TEXEL_SIZE_CM, Position.Y / TEXEL_SIZE_CM, heightmap, heightmapFactor, terraformedTemplate, TextureChangeSpeed, iApplyRangeMin, iApplyRangeMax);
+		TerraformedCounter+= m_Landscape.ApplyTerraforming(Position.X / TEXEL_SIZE_CM, Position.Y / TEXEL_SIZE_CM, heightmap, heightmapFactor, iApplyRangeMin, iApplyRangeMax);
 	}
 	if (haveColorMap) {
-		m_Landscape.ApplyColoring(Position.X / TEXEL_SIZE_CM, Position.Y / TEXEL_SIZE_CM, colormap, iApplyRangeMin, iApplyRangeMax);
+		m_Landscape.ApplyColoring(Position.X / TEXEL_SIZE_CM, Position.Y / TEXEL_SIZE_CM, colormap, terraformedTemplate, TextureChangeSpeed, iApplyRangeMin, iApplyRangeMax);
 	}
 	m_Terraformed = true;
 	return TerraformedCounter;

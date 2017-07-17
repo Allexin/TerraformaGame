@@ -25,17 +25,18 @@ struct sChunkNormalData {
 };
 
 struct sTechInfo {
-	bool Changed;
+	int ChangedValue;
 	sTechInfo() {
-		Changed = false;
+		ChangedValue = 0;
 	}
 };
 
-struct sTerraformaGridChunk {
+struct sTerraformaGridChunk {	
 	uint16 minHeight;
 	uint16 maxHeight;
-	int x;
-	int y;
+	int chunkX;
+	int chunkY;
+	
 	sChunkHeightData dynDataHeightMap[CHUNK_H_RESOLUTION+2][CHUNK_H_RESOLUTION + 2];
 	sChunkNormalData	dynDataNormalMap[CHUNK_H_RESOLUTION + 2][CHUNK_H_RESOLUTION + 2];
 	sChunkTextureData	dynDataTexture[CHUNK_T_RESOLUTION + 2][CHUNK_T_RESOLUTION + 2];
@@ -43,9 +44,20 @@ struct sTerraformaGridChunk {
 	bool HeightmapChanged;
 	bool TextureChanged;
 
-	int ApplyCutTerraforming(int globalX, int globalY, uint16 targetHeight, int dstX, int dstY, int dstWidth, int dstHeight, int srcX, int srcY, const FsTerraformaTemplate& heightmap, uint8 heightmapFactor, uint16 ApplyRangeMin = 0, uint16 ApplyRangeMax = MAX_uint16);
-	int ApplyTerraforming(int globalX, int globalY, int dstX, int dstY, int dstWidth, int dstHeight, int srcX, int srcY, const FsTerraformaTemplate& heightmap, uint8 heightmapFactor, const FsTerraformaTemplate* terraformedColormap, float colorFactor, uint16 ApplyRangeMin = 0, uint16 ApplyRangeMax = MAX_uint16);
-	void ApplyColoring(int dstX, int dstY, int dstWidth, int dstHeight, int srcX, int srcY, const FsTerraformaTemplate& colormap, uint16 ApplyRangeMin = 0, uint16 ApplyRangeMax = MAX_uint16);
+	int ApplyCutTerraforming(uint16 targetHeight, int dstX, int dstY, int dstWidth, int dstHeight, int srcX, int srcY, const FsTerraformaTemplate& heightmap, uint8 heightmapFactor, uint16 ApplyRangeMin = 0, uint16 ApplyRangeMax = MAX_uint16);
+	int ApplyTerraforming(int dstX, int dstY, int dstWidth, int dstHeight, int srcX, int srcY, const FsTerraformaTemplate& heightmap, uint8 heightmapFactor, uint16 ApplyRangeMin = 0, uint16 ApplyRangeMax = MAX_uint16);
+	void ApplyColoring(int dstX, int dstY, int dstWidth, int dstHeight, int srcX, int srcY, const FsTerraformaTemplate& colormap, const FsTerraformaTemplate* terraformedColormap, float colorFactor, uint16 ApplyRangeMin = 0, uint16 ApplyRangeMax = MAX_uint16);
+
+	void Recalc(const FsTerraformaTemplate* terraformedColormap, float colorFactor);
+protected:
+	struct sHeightInfo {
+		uint16 height;
+		FVector vertex;
+		bool available;
+	};
+
+	sHeightInfo GetHeight(int ix, int iy);
+	FVector GetNormal(int ix, int iy, uint16 centerHeight);
 };
 
 class cTerraformaGrid {
@@ -74,8 +86,8 @@ public:
 	bool loadFromArray(const TArray<uint8>& TFARawData);
 
 	int ApplyCutTerraforming(int x, int y, uint16 targetHeight, const FsTerraformaTemplate& cutHeightmap, uint8 heightmapFactor, uint16 ApplyRangeMin = 0, uint16 ApplyRangeMax = MAX_uint16);
-	int ApplyTerraforming(int x, int y, const FsTerraformaTemplate& heightmap, uint8 heightmapFactor, const FsTerraformaTemplate* terraformedColormap, float colorFactor, uint16 ApplyRangeMin = 0, uint16 ApplyRangeMax = MAX_uint16);
-	void ApplyColoring(int x, int y, const FsTerraformaTemplate& colormap, uint16 ApplyRangeMin = 0, uint16 ApplyRangeMax = MAX_uint16);
+	int ApplyTerraforming(int x, int y, const FsTerraformaTemplate& heightmap, uint8 heightmapFactor, uint16 ApplyRangeMin = 0, uint16 ApplyRangeMax = MAX_uint16);
+	void ApplyColoring(int x, int y, const FsTerraformaTemplate& colormap, const FsTerraformaTemplate* terraformedColormap, float colorFactor, uint16 ApplyRangeMin = 0, uint16 ApplyRangeMax = MAX_uint16);
 
 
 
