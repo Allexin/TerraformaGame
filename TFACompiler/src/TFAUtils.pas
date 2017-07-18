@@ -7,6 +7,7 @@ uses
   LibTiffDelphi, uOSAL;
 
 type
+{//REMOVE NORMAL MAP CALCULATION
   TVector3f = record
     x,y,z:single;
     class operator Add(a,b:TVector3f):TVector3f;
@@ -15,12 +16,14 @@ type
     class operator Multiply(const a:TVector3f; s:single):TVector3f;
     Function Dot(a:TVector3f):single;
     Procedure Normalize();
-  end;
+  end;                          }
 
   TTFAFile = class
   protected
     FHeightmap:PWord;
+    {//REMOVE NORMAL MAP CALCULATION
     FNormalmap:PInteger;
+    }
     FHeightMapWidth:integer;
     FHeightMapHeight:integer;
 
@@ -31,7 +34,9 @@ type
 
     Function GetChunkLayerCoord(chunkX, chunkY, x, y: integer; var outCoord:TPoint):boolean;
     Function GetChunkTexLayerCoord(chunkX, chunkY, x, y: integer; var outCoord:TPoint):boolean;
+    {//REMOVE NORMAL MAP CALCULATION
     Function GetNormal(chunkX, chunkY, x, y: integer): TVector3f;
+    }
   public
     LastError:string;
 
@@ -39,7 +44,9 @@ type
 
     Function ImportHeightMapTIFF(const FileName:string):boolean;
     Function ImportTextureBMP(const FileName:string):boolean;
+    {//REMOVE NORMAL MAP CALCULATION
     Procedure GenerateNormalMap();
+    }
 
     Function SaveToFile(const FileName:string):boolean;
   end;
@@ -47,8 +54,10 @@ type
 
 
 implementation
-{ TVector3f }
 
+
+{ TVector3f }
+{//REMOVE NORMAL MAP CALCULATION
 class operator TVector3f.Add(a, b: TVector3f): TVector3f;
 begin
   Result.x := a.x + b.x;
@@ -100,18 +109,21 @@ begin
   Result.y:=y;
   Result.z:=z;
 end;
+}
 
 { TTFAFile }
 
 const
   CHUNK_RESOLUTION:integer = 64;
 const
-  TFA_FILE_VERSION:integer = 4;
+  TFA_FILE_VERSION:integer = 5;
 
 constructor TTFAFile.Create;
 begin
   FHeightmap:=nil;
+  {//REMOVE NORMAL MAP CALCULATION
   FNormalmap:=nil;
+  }
   FTexture:=nil;
 end;
 
@@ -243,6 +255,7 @@ begin
 end;
 
 
+{//REMOVE NORMAL MAP CALCULATION
 
 procedure TTFAFile.GenerateNormalMap;
 var
@@ -275,20 +288,6 @@ begin
             //WTF??
           end;
         end;
-end;
-
-function TTFAFile.GetChunkLayerCoord(chunkX, chunkY, x, y: integer; var outCoord:TPoint):boolean ;
-begin
-  outCoord.X:=chunkX*CHUNK_RESOLUTION + x;
-  outCoord.Y:=chunkY*CHUNK_RESOLUTION + y;
-  Result:=(outCoord.X>=0) and (outCoord.X<FHeightMapWidth) and (outCoord.Y>=0) and (outCoord.Y<FHeightMapHeight);
-end;
-
-function TTFAFile.GetChunkTexLayerCoord(chunkX, chunkY, x, y: integer; var outCoord:TPoint):boolean ;
-begin
-  outCoord.X:=chunkX*CHUNK_RESOLUTION*2 + x;
-  outCoord.Y:=chunkY*CHUNK_RESOLUTION*2 + y;
-  Result:=(outCoord.X>=0) and (outCoord.X<FTextureWidth) and (outCoord.Y>=0) and (outCoord.Y<FTextureHeight);
 end;
 
 Function Normal(const v1,v2,v3:TVector3f):Tvector3f;
@@ -345,6 +344,23 @@ begin
     Result:=Result + Normal(center.vertex,minusX.vertex,plusY.vertex);
   Result.Normalize();
 end;
+}
+
+function TTFAFile.GetChunkLayerCoord(chunkX, chunkY, x, y: integer; var outCoord:TPoint):boolean ;
+begin
+  outCoord.X:=chunkX*CHUNK_RESOLUTION + x;
+  outCoord.Y:=chunkY*CHUNK_RESOLUTION + y;
+  Result:=(outCoord.X>=0) and (outCoord.X<FHeightMapWidth) and (outCoord.Y>=0) and (outCoord.Y<FHeightMapHeight);
+end;
+
+function TTFAFile.GetChunkTexLayerCoord(chunkX, chunkY, x, y: integer; var outCoord:TPoint):boolean ;
+begin
+  outCoord.X:=chunkX*CHUNK_RESOLUTION*2 + x;
+  outCoord.Y:=chunkY*CHUNK_RESOLUTION*2 + y;
+  Result:=(outCoord.X>=0) and (outCoord.X<FTextureWidth) and (outCoord.Y>=0) and (outCoord.Y<FTextureHeight);
+end;
+
+
 
 Function TTFAFile.SaveToFile(const FileName: string):boolean;
 var
@@ -382,8 +398,8 @@ begin
   F.WriteInteger(chunksYCount);
   for y := 0 to chunksYCount-1 do
     for x := 0 to chunksYCount-1 do
-      for iy := -1  to CHUNK_RESOLUTION  do
-        for ix := -1  to CHUNK_RESOLUTION  do begin
+      for iy := -1  to CHUNK_RESOLUTION+1 +1  do
+        for ix := -1  to CHUNK_RESOLUTION+1 +1  do begin
           if (GetChunkLayerCoord(x,y, ix,iy, coord)) then begin
             It:=FHeightmap;
             inc(It,coord.Y*FHeightMapWidth + coord.X);
@@ -395,8 +411,8 @@ begin
         end;
   for y := 0 to chunksYCount-1 do
     for x := 0 to chunksYCount-1 do
-      for iy := -1  to CHUNK_RESOLUTION*2  do
-        for ix := -1  to CHUNK_RESOLUTION*2  do begin
+      for iy := -1  to CHUNK_RESOLUTION*2+1 +1  do
+        for ix := -1  to CHUNK_RESOLUTION*2+1 +1  do begin
           if (GetChunkTexLayerCoord(x,y, ix,iy, coord)) then begin
             TIt:=PByte(FTexture);
             inc(TIt,coord.Y*FTextureWidth*4 + coord.X*4);
@@ -417,7 +433,7 @@ begin
           F.WriteByte(b);
           F.WriteByte(reserv);
         end;
-
+  {//REMOVE NORMAL MAP CALCULATION
   for y := 0 to chunksYCount-1 do
     for x := 0 to chunksYCount-1 do
       for iy := -1  to CHUNK_RESOLUTION  do
@@ -442,6 +458,7 @@ begin
           F.WriteByte(b);
           F.WriteByte(reserv);
         end;
+        }
 
   F.Free();
   Result:=true;

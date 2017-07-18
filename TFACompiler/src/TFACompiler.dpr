@@ -57,8 +57,10 @@ begin
     Exit;
   end;
 
+  {//REMOVE NORMAL MAP CALCULATION
   writeln('generating normal map');
   TFAFile.GenerateNormalMap();
+  }
 
   writeln('saving to file '+TFAFileName);
   if (not TFAFile.SaveToFile(TFAFileName)) then begin

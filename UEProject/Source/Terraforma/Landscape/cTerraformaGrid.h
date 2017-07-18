@@ -1,10 +1,17 @@
 #pragma once
 #include "sTerraformaTemplate.h"
 
+
+/*
+chunk texture size is CHUNK_RESOLUTION +4
++1 - is joint point with next chunk
++1 ... +1 - filtration border
++1 - parity
+*/
 const int CHUNK_H_RESOLUTION = 64;
 const int CHUNK_T_RESOLUTION = 128;
-const float CHUNK_H_STEP = 1.0f / (CHUNK_H_RESOLUTION + 2);
-const float CHUNK_T_STEP = 1.0f / (CHUNK_T_RESOLUTION + 2);
+const float CHUNK_H_STEP = 1.0f / (CHUNK_H_RESOLUTION + 4); 
+const float CHUNK_T_STEP = 1.0f / (CHUNK_T_RESOLUTION + 4); 
 
 struct sChunkHeightData {
 	uint16 height;
@@ -37,10 +44,10 @@ struct sTerraformaGridChunk {
 	int chunkX;
 	int chunkY;
 	
-	sChunkHeightData dynDataHeightMap[CHUNK_H_RESOLUTION+2][CHUNK_H_RESOLUTION + 2];
-	sChunkNormalData	dynDataNormalMap[CHUNK_H_RESOLUTION + 2][CHUNK_H_RESOLUTION + 2];
-	sChunkTextureData	dynDataTexture[CHUNK_T_RESOLUTION + 2][CHUNK_T_RESOLUTION + 2];
-	sTechInfo			TechData[CHUNK_H_RESOLUTION + 2][CHUNK_H_RESOLUTION + 2];
+	sChunkHeightData	dynDataHeightMap[CHUNK_H_RESOLUTION + 4][CHUNK_H_RESOLUTION + 4];
+	sChunkNormalData	dynDataNormalMap[CHUNK_H_RESOLUTION + 4][CHUNK_H_RESOLUTION + 4];
+	sChunkTextureData	dynDataTexture[CHUNK_T_RESOLUTION + 4][CHUNK_T_RESOLUTION + 4];
+	sTechInfo			TechData[CHUNK_H_RESOLUTION + 4][CHUNK_H_RESOLUTION + 4];
 	bool HeightmapChanged;
 	bool TextureChanged;
 
@@ -48,7 +55,7 @@ struct sTerraformaGridChunk {
 	int ApplyTerraforming(int dstX, int dstY, int dstWidth, int dstHeight, int srcX, int srcY, const FsTerraformaTemplate& heightmap, uint8 heightmapFactor, uint16 ApplyRangeMin = 0, uint16 ApplyRangeMax = MAX_uint16);
 	void ApplyColoring(int dstX, int dstY, int dstWidth, int dstHeight, int srcX, int srcY, const FsTerraformaTemplate& colormap, const FsTerraformaTemplate* terraformedColormap, float colorFactor, uint16 ApplyRangeMin = 0, uint16 ApplyRangeMax = MAX_uint16);
 
-	void Recalc(const FsTerraformaTemplate* terraformedColormap, float colorFactor);
+	void Recalc(const FsTerraformaTemplate* terraformedColormap, float colorFactor, bool forceNormalRecalc = false);
 protected:
 	struct sHeightInfo {
 		uint16 height;
