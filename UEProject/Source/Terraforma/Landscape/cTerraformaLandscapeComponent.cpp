@@ -264,6 +264,17 @@ void UcTerraformaLandscapeComponent::PostEditChangeProperty(struct FPropertyChan
 }
 #endif
 
+float UcTerraformaLandscapeComponent::GetToolHeight(FVector point) {
+	FVector landscapePos(0, 0, 0);
+	FVector landscapeSize(m_Landscape.width()*CHUNK_SIZE_CM, m_Landscape.height()*CHUNK_SIZE_CM, 5000);	
+	if (point.X < 0 || point.X >= landscapeSize.X || point.Y < 0 || point.Y >= landscapeSize.Y)
+		return 0;
+
+	FIntPoint pos((int)(point.X / TEXEL_SIZE_CM), (int)(point.Y / TEXEL_SIZE_CM));
+	float height = (float)m_Landscape.getToolHeightDirect(pos.X, pos.Y)* MAX_HEIGHT_CM / MAX_uint8;
+	return height;
+}
+
 bool UcTerraformaLandscapeComponent::LineIntersection(FVector start, FVector direction, FVector& intersectionLocation) {
 	FVector landscapePos(0, 0, 0);
 	FVector landscapeSize(m_Landscape.width()*CHUNK_SIZE_CM, m_Landscape.height()*CHUNK_SIZE_CM, 5000);
@@ -345,3 +356,6 @@ int UcTerraformaLandscapeComponent::ApplyTerraforming(FVector Position, const Fs
 	return TerraformedCounter;
 }
 
+void UcTerraformaLandscapeComponent::ApplyTerraformingTaskTool(FVector Position, float radius, float factor, ETerraformingToolEnum tool) {
+	m_Landscape.ApplyTerraformingTaskTool(Position.X / TEXEL_SIZE_CM, Position.Y / TEXEL_SIZE_CM, (uint16)(Position.Z * MAX_uint16 / MAX_HEIGHT_CM), (int)(radius / TEXEL_SIZE_CM) , factor, tool);
+}

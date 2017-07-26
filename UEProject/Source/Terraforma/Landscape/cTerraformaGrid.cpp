@@ -201,7 +201,58 @@ void sTerraformaGridChunk::ApplyColoring(int dstX, int dstY, int dstWidth, int d
 	TextureChanged = true;
 }
 
+void sTerraformaGridChunk::ApplyTerraformingTaskTool(int x, int y, uint16 startHeight, int radius, float factor, ETerraformingToolEnum tool) {
+	float radiusSQR = FMath::Sqrt(radius*radius);
+	int globalPosX = chunkX*CHUNK_H_RESOLUTION - 1;
+	int globalPosY = chunkY*CHUNK_H_RESOLUTION - 1;
 
+	startHeight = startHeight / 256;
+	if (startHeight == 0)
+		startHeight = 1;
+
+	for (int iy = 0; iy<CHUNK_H_RESOLUTION + 4; iy++)
+		for (int ix = 0; ix < CHUNK_H_RESOLUTION + 4; ix++) {
+			float distToCenterSQR = FMath::Sqrt(FMath::Square(x - (ix + globalPosX)) + FMath::Square(y - (iy + globalPosY)));
+			if (distToCenterSQR <= radiusSQR) {
+				float pointFactor = factor*  (distToCenterSQR / radiusSQR);
+				switch (tool) {
+					case ETerraformingToolEnum::TTE_OFF: {
+						//WTF???
+					};
+					break;
+					case ETerraformingToolEnum::TTE_CLEAR: {
+						TechData[iy][ix].toolHeight = 0;
+					};
+					break;
+					case ETerraformingToolEnum::TTE_FLAT: {
+						TechData[iy][ix].toolHeight = startHeight;
+					};
+					break;
+					case ETerraformingToolEnum::TTE_UP: {
+						if (TechData[iy][ix].toolHeight == 0)
+							TechData[iy][ix].toolHeight = dynDataHeightMap[iy][ix].height / 256;
+
+						float targetHeight = FMath::Min(255, startHeight + 10);
+						float newHeight = FMath::Lerp(TechData[iy][ix].toolHeight, targetHeight, factor);;
+						
+						if (TechData[iy][ix].toolHeight < targetHeight)
+							TechData[iy][ix].toolHeight = newHeight;						
+					};
+					break;
+					case ETerraformingToolEnum::TTE_DOWN: {
+						if (TechData[iy][ix].toolHeight == 0)
+							TechData[iy][ix].toolHeight = dynDataHeightMap[iy][ix].height / 256;
+						float targetHeight = FMath::Max(1, startHeight - 10);
+						float newHeight = FMath::Lerp(TechData[iy][ix].toolHeight, targetHeight, factor);
+						if (TechData[iy][ix].toolHeight > newHeight)
+							TechData[iy][ix].toolHeight = newHeight;
+						
+					};
+					break;
+				}
+			}			
+		}
+}
 
 
 
@@ -412,6 +463,27 @@ void cTerraformaGrid::ApplyColoring(int x, int y, const FsTerraformaTemplate& co
 			chunk.ApplyColoring(placeX - chunkLeft, placeY - chunkTop, placeXR - placeX, placeYB - placeY, placeX - startX, placeY - startY, colormap,
 				terraformedColormap,colorFactor,
 				ApplyRangeMin, ApplyRangeMax);
+		}
+	}
+}
+
+void cTerraformaGrid::ApplyTerraformingTaskTool(int x, int y, uint16 startHeight, int radius, float factor, ETerraformingToolEnum tool) {
+	int startX = x - radius;
+	int startY = y - radius;
+	int endX = startX + radius*2 - 1;
+	int endY = startY + radius*2 - 1;
+	int startXChunk = FMath::Max(0, (startX - 1) / CHUNK_H_RESOLUTION);
+	int endXChunk = FMath::Min(m_Width - 1, (endX + 1) / CHUNK_H_RESOLUTION);
+	int startYChunk = FMath::Max(0, (startY - 1) / CHUNK_H_RESOLUTION);
+	int endYChunk = FMath::Min(m_Height - 1, (endY + 1) / CHUNK_H_RESOLUTION);
+
+	for (int cy = startYChunk; cy <= endYChunk; cy++) {
+		int chunkIndex = getIndex(startXChunk, cy);
+		for (int cx = startXChunk; cx <= endXChunk; cx++) {
+			sTerraformaGridChunk& chunk = m_Map[chunkIndex]; chunkIndex++;
+
+			chunk.ApplyTerraformingTaskTool(x, y, startHeight, 
+				radius, factor, tool);
 		}
 	}
 }

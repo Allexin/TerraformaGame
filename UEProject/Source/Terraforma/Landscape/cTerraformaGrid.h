@@ -32,9 +32,12 @@ struct sChunkNormalData {
 };
 
 struct sTechInfo {
+	float toolHeight;
+
 	int ChangedValue;
 	sTechInfo() {
 		ChangedValue = 0;
+		toolHeight = 0;
 	}
 };
 
@@ -55,7 +58,9 @@ struct sTerraformaGridChunk {
 	int ApplyTerraforming(int dstX, int dstY, int dstWidth, int dstHeight, int srcX, int srcY, const FsTerraformaTemplate& heightmap, uint8 heightmapFactor, uint16 ApplyRangeMin = 0, uint16 ApplyRangeMax = MAX_uint16);
 	void ApplyColoring(int dstX, int dstY, int dstWidth, int dstHeight, int srcX, int srcY, const FsTerraformaTemplate& colormap, const FsTerraformaTemplate* terraformedColormap, float colorFactor, uint16 ApplyRangeMin = 0, uint16 ApplyRangeMax = MAX_uint16);
 
-	void Recalc(const FsTerraformaTemplate* terraformedColormap, float colorFactor, bool forceNormalRecalc = false);
+	void ApplyTerraformingTaskTool(int x, int y, uint16 startHeight, int radius, float factor, ETerraformingToolEnum tool);
+
+	void Recalc(const FsTerraformaTemplate* terraformedColormap, float colorFactor, bool forceNormalRecalc = false);	
 protected:
 	struct sHeightInfo {
 		uint16 height;
@@ -73,7 +78,7 @@ protected:
 	int m_Width;
 	int m_Height;
 	void init(int width, int height);
-	inline int getIndex(int x, int y) { return x + y*m_Width; }
+	inline int getIndex(int x, int y) const { return x + y*m_Width; }
 public:
 	cTerraformaGrid();	
 
@@ -83,10 +88,15 @@ public:
 	sTerraformaGridChunk* getData(int index) { return &m_Map[index]; }
 
 	/*DO NOT USE IT TO ITERATE THROUGH LANDSCAPE, GET CHUNKS INSTEAD*/
-	uint16 getHeightDirect(int x, int y) { 
+	uint16 getHeightDirect(int x, int y) const { 
 		int chunkX = x / CHUNK_H_RESOLUTION;
 		int chunkY = y / CHUNK_H_RESOLUTION;
 		return m_Map[getIndex(chunkX, chunkY)].dynDataHeightMap[y % CHUNK_H_RESOLUTION +1][x % CHUNK_H_RESOLUTION + 1].height;
+	}
+	uint8 getToolHeightDirect(int x, int y) const {
+		int chunkX = x / CHUNK_H_RESOLUTION;
+		int chunkY = y / CHUNK_H_RESOLUTION;
+		return m_Map[getIndex(chunkX, chunkY)].TechData[y % CHUNK_H_RESOLUTION + 1][x % CHUNK_H_RESOLUTION + 1].toolHeight;
 	}
 
 	bool loadFromFile(FString FileName);
@@ -96,9 +106,7 @@ public:
 	int ApplyTerraforming(int x, int y, const FsTerraformaTemplate& heightmap, uint8 heightmapFactor, uint16 ApplyRangeMin = 0, uint16 ApplyRangeMax = MAX_uint16);
 	void ApplyColoring(int x, int y, const FsTerraformaTemplate& colormap, const FsTerraformaTemplate* terraformedColormap, float colorFactor, uint16 ApplyRangeMin = 0, uint16 ApplyRangeMax = MAX_uint16);
 
-
-
-
+	void ApplyTerraformingTaskTool(int x, int y, uint16 startHeight, int radius, float factor, ETerraformingToolEnum tool);
 public:
 	//static void convertVMPtoTFA(FString Path, FString FileName);
 };

@@ -425,6 +425,7 @@ void FcTerraformaMeshSceneProxy::DrawStaticElements(FStaticPrimitiveDrawInterfac
 	if (m_ChunksCount == 0)
 		return;
 
+
 	for (int i = 0; i < m_ChunksCount; i++) {
 		sChunkInfo& chunk = (sChunkInfo&)m_Chunks[i];
 		FMeshBatch &Mesh = chunk.Mesh;

@@ -19,11 +19,6 @@
  */
 
 
-
-
-
-
-
 UCLASS()
 class TERRAFORMA_API UcTerraformaLandscapeComponent : public UMeshComponent
 {
@@ -71,8 +66,14 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Landscape")
 	bool LineIntersection(FVector start, FVector direction, FVector& intersectionLocation);
 
-	UFUNCTION(BlueprintCallable, Category = "Landscape")
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Landscape")
+		float GetToolHeight(FVector point);
+
+	UFUNCTION(BlueprintCallable, Category = "Terraforming")
 	int ApplyTerraforming(FVector Position, const FsTerraformaTemplate& cutHeightmap, const FsTerraformaTemplate& heightmap, uint8 heightmapFactor, const FsTerraformaTemplate& colormap, float ApplyRangeMin = 0, float ApplyRangeMax = 6400.f /*MAX_HEIGHT_CM*/);
+
+	UFUNCTION(BlueprintCallable, Category = "Terraforming")
+		void ApplyTerraformingTaskTool(FVector Position, float radius, float factor, ETerraformingToolEnum tool);
 
 	
 protected:
@@ -91,6 +92,8 @@ public:
 	// Begin UMeshComponent interface.
 	virtual int32 GetNumMaterials() const override;
 	// End UMeshComponent interface.
+
+	const cTerraformaGrid& getLandscape() { return m_Landscape; }
 
 	// Begin UPrimitiveComponent interface.
 	virtual FPrimitiveSceneProxy* CreateSceneProxy() override;

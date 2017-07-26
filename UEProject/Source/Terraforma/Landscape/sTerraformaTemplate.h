@@ -11,6 +11,16 @@
  */
 
 UENUM(BlueprintType)
+enum class ETerraformingToolEnum : uint8
+{
+	TTE_OFF 	UMETA(DisplayName = "OFF"),
+	TTE_CLEAR 	UMETA(DisplayName = "Clear"),
+	TTE_FLAT 	UMETA(DisplayName = "Flat"),
+	TTE_UP 		UMETA(DisplayName = "Up"),
+	TTE_DOWN 	UMETA(DisplayName = "Down")
+};
+
+UENUM(BlueprintType)
 enum class ETemplateTypeEnum : uint8
 {
 	TTE_HEIGHTMAP 	UMETA(DisplayName = "Heightmap"),
